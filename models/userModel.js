@@ -10,8 +10,8 @@ const User = {
         db.query('SELECT * FROM users WHERE user_id = ?', [id], callback);
     },
 
-    getUser:(email, callback)=>{
-        db.query("SELECT * FROM users WHERE email = ?",[email],callback);
+    getByEmail:(user, callback)=>{
+        db.query("SELECT * FROM users WHERE email = ?",[user.email],callback);
     },
 
     create: async (user, callback) => {
