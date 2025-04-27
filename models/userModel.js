@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const bcrypt = require("bcryptjs");
 
 const User = {
     getAll: callback => {
@@ -9,8 +10,9 @@ const User = {
         db.query('SELECT * FROM users WHERE user_id = ?', [id], callback);
     },
 
-    create: (user, callback) => {
-        db.query('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [user.name, user.email, user.password, user.role], callback);
+    create: async (user, callback) => {
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        db.query('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [user.name, user.email, hashedPassword, user.role], callback);
     },
 
     update: (id, user, callback) => {

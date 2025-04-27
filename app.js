@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require("bcryptjs");
 const bodyParser = require('body-parser');
 const userRoutes = require('./routes/userRoutes');
 
