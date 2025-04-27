@@ -1,4 +1,7 @@
 const User = require('../models/userModel');
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+
 
 exports.getAllUsers = (req, res) => {
     User.getAll((err, results) => {
@@ -11,6 +14,25 @@ exports.getUserById = (req, res) => {
     User.getById(req.params.id, (err, results) => {
         if (err) throw err;
         res.json(results[0]);
+    });
+};
+
+exports.getUser =  (req,res) =>{
+    User.getUser(req.body.email, async (err,results)=>{
+        if(err) throw err;
+        const user = results[0];
+
+        const isMatch = await bcrypt.compare(req.body.password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({
+              error: "Wrong email or password.",
+            });
+          }
+          const token = jwt.sign({ id: user.user_id, email: user.email }, "kunci", {
+            expiresIn: 3600,
+          });
+          res.status(200).json({ token });
+
     });
 };
 

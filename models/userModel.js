@@ -10,6 +10,10 @@ const User = {
         db.query('SELECT * FROM users WHERE user_id = ?', [id], callback);
     },
 
+    getUser:(email, callback)=>{
+        db.query("SELECT * FROM users WHERE email = ?",[email],callback);
+    },
+
     create: async (user, callback) => {
         const hashedPassword = await bcrypt.hash(user.password, 10);
         db.query('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [user.name, user.email, hashedPassword, user.role], callback);
