@@ -1,30 +1,30 @@
-const MenuModel = require('../models/menuModel');
+const Menu = require('../models/menuModel');
 
-exports.getMenusWithCategories = async (req, res) => {
-    try {
-        const data = await MenuModel.getMenusWithCategories();
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+exports.getMenusWithCategories = (req, res) => {
+    Menu.getMenusWithCategories((err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
 
-exports.toggleMenuVisibility = async (req, res) => {
-    const menuId = req.params.id;
-    try {
-        await MenuModel.toggleVisibility(menuId);
-        res.sendStatus(200);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+        // Format ke bentuk list of category, masing-masing dengan array menus
+        const categoryMap = {};
 
-exports.deleteMenu = async (req, res) => {
-    const menuId = req.params.id;
-    try {
-        await MenuModel.deleteMenu(menuId);
-        res.sendStatus(200);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        results.forEach(row => {
+            const categoryName = row.category_name;
+            if (!categoryMap[categoryName]) {
+                categoryMap[categoryName] = {
+                    name: categoryName,
+                    menus: []
+                };
+            }
+
+            categoryMap[categoryName].menus.push({
+                title: row.menu_name,
+                price: row.menu_price,
+                imageRes: row.menu_image,
+                visibleMenu: row.menu_status === 1
+            });
+            
+        });
+
+        res.json(Object.values(categoryMap));
+    });
 };
