@@ -2,29 +2,36 @@ const db = require('../config/db');
 const bcrypt = require("bcryptjs");
 
 const User = {
-    getAll: callback => {
-        db.query('SELECT * FROM users', callback);
+    async getAll() {
+        const [rows] = await db.query('SELECT * FROM users');
+        return rows;
     },
 
-    getById: (id, callback) => {
-        db.query('SELECT * FROM users WHERE user_id = ?', [id], callback);
+    async getById(id) {
+        const [rows] = await db.query('SELECT * FROM users WHERE user_id = ?', [id]);
+        return rows[0];
     },
 
-    getByEmail:(user, callback)=>{
-        db.query("SELECT * FROM users WHERE email = ?",[user.email],callback);
+    async getByEmail(user) {
+        const [rows] = await db.query("SELECT * FROM users WHERE email = ?",[user.email]);
+        return rows[0];
     },
 
-    create: async (user, callback) => {
+    async create(user) {
         const hashedPassword = await bcrypt.hash(user.password, 10);
-        db.query('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [user.name, user.email, hashedPassword, user.role], callback);
+        const [result] = await db.query('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [user.name, user.email, hashedPassword, user.role]);
+        return { id: result.insertId, ...user };
+
     },
 
-    update: (id, user, callback) => {
-        db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [user.name, user.email, id], callback);
+    async update(id, user){
+        const [result] = await db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [user.name, user.email, id]);
+        return { id, ...user };
     },
 
-    delete: (id, callback) => {
-        db.query('DELETE FROM users WHERE id = ?', [id], callback);
+    async delete(id) {
+        await db.query('DELETE FROM users WHERE id = ?', [id]);
+        return {message: 'User Deleted'}
     }
 };
 
