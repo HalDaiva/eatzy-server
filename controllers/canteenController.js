@@ -13,6 +13,15 @@ exports.getAllCanteens = async (req, res) => {
     }
 };
 
+exports.getCanteenById = async (req, res) => {
+    try {
+        const canteen = await Canteen.getCanteenById(req.params.id);
+        res.json(canteen);
+    } catch (e) {
+        res.status(500).json({error: e});
+    }
+};
+
 exports.getAllMenuCategoryByCanteen = async (req, res) => {
     try {
         const menuCategories = await Menu.getAllMenuCategoryByCanteen(req.params.id);
