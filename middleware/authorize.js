@@ -15,7 +15,9 @@ exports.authorize = (role = null) => {
                 throw new Error("Invalid token.");
             }
 
-            if (data.role !== role) {
+            req.user = data;
+
+            if (role && data.role !== role) {
                 throw new Error("Access Denied.");
             }
 
