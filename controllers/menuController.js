@@ -1,47 +1,88 @@
 const Menu = require('../models/menuModel');
 
-exports.getMenusWithCategories = (req, res) => {
-    const userId = req.user.id; // pastikan ada middleware auth
+exports.getMenusWithCategories = async (req, res) => {
+    try {
+        const userId = req.user.id; // pastikan middleware auth mengisi req.user
+        const rows = await Menu.getMenusWithAddOnsByUserId(userId);
 
-    Menu.getMenusWithCategoriesByUserId(userId, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-
+        // Struktur data akhir: kategori → menu → addon kategori → addons
         const categoryMap = {};
 
-        results.forEach(row => {
-            const categoryId = row.category_id;
-            if (!categoryMap[categoryId]) {
-                categoryMap[categoryId] = {
-                    idCategory: categoryId,
-                    idCanteen: row.canteen_id,
-                    categoryName: row.category_name,
-                    menus: []
+        for (const row of rows) {
+            if (!categoryMap[row.menu_category_id]) {
+                categoryMap[row.menu_category_id] = {
+                    menu_category_id: row.menu_category_id,
+                    canteen_id : row.canteen_id,
+                    menu_category_name: row.menu_category_name,
+                    menus: {},
                 };
             }
 
-            // Jika ada menu
-            if (row.menu_id) {
-                categoryMap[categoryId].menus.push({
-                    idMenu: row.menu_id,
-                    namaMenu: row.menu_name,
-                    price: row.menu_price,
-                    imageRes: row.menu_image,
-                    visibleMenu: row.menu_status === 1
-                });
-            }
-        });
+            const menuMap = categoryMap[row.menu_category_id].menus;
 
-        res.json(Object.values(categoryMap));
-    });
+            if (!menuMap[row.menu_id]) {
+                menuMap[row.menu_id] = {
+                    menu_id: row.menu_id,
+                    menu_name: row.menu_name,
+                    menu_price: row.menu_price,
+                    preparation_time: row.preparation_time,
+                    menu_image: row.menu_image,
+                    menu_is_available: row.menu_is_available===1,
+                    addon_categories: {},
+                };
+            }
+
+            const addonCategoryMap = menuMap[row.menu_id].addon_categories;
+
+            if (row.addon_category_id) {
+                if (!addonCategoryMap[row.addon_category_id]) {
+                    addonCategoryMap[row.addon_category_id] = {
+                        addon_category_id: row.addon_category_id,
+                        addon_category_name: row.addon_category_name,
+                        is_multiple_choice: row.is_multiple_choice===1,
+                        addons: [],
+                    };
+                }
+
+                if (row.addon_id) {
+                    addonCategoryMap[row.addon_category_id].addons.push({
+                        addon_id: row.addon_id,
+                        addon_name: row.addon_name,
+                        addon_price: row.addon_price,
+                        addon_is_available: row.addon_is_available,
+                    });
+                }
+            }
+        }
+
+        // Format final: ubah object ke array dan bersihkan nested maps
+        const finalResult = Object.values(categoryMap).map(category => ({
+            ...category,
+            menus: Object.values(category.menus).map(menu => ({
+                ...menu,
+                addon_categories: Object.values(menu.addon_categories),
+            })),
+        }));
+
+        res.json(finalResult);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
 };
 
-exports.deleteMenu = (req, res) => {
-    const menuId = req.params.id;
 
-    Menu.deleteMenuById(menuId, (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Menu not found' });
+exports.deleteMenu = async (req, res) => {
+    try {
+        const menuId = req.params.id;
+        const result = await Menu.deleteMenuById(menuId);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Menu not found' });
+        }
 
         res.json({ message: 'Menu deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
