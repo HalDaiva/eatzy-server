@@ -1,4 +1,5 @@
 const Menu = require('../models/menuModel');
+const Addon = require('../models/addonModel');
 
 exports.getMenusWithCategories = async (req, res) => {
     try {
@@ -12,7 +13,7 @@ exports.getMenusWithCategories = async (req, res) => {
             if (!categoryMap[row.menu_category_id]) {
                 categoryMap[row.menu_category_id] = {
                     menu_category_id: row.menu_category_id,
-                    canteen_id : row.canteen_id,
+                    canteen_id: row.canteen_id,
                     menu_category_name: row.menu_category_name,
                     menus: {},
                 };
@@ -27,7 +28,7 @@ exports.getMenusWithCategories = async (req, res) => {
                     menu_price: row.menu_price,
                     preparation_time: row.preparation_time,
                     menu_image: row.menu_image,
-                    menu_is_available: row.menu_is_available===1,
+                    menu_is_available: row.menu_is_available === 1,
                     addon_categories: {},
                 };
             }
@@ -39,7 +40,7 @@ exports.getMenusWithCategories = async (req, res) => {
                     addonCategoryMap[row.addon_category_id] = {
                         addon_category_id: row.addon_category_id,
                         addon_category_name: row.addon_category_name,
-                        is_multiple_choice: row.is_multiple_choice===1,
+                        is_multiple_choice: row.is_multiple_choice === 1,
                         addons: [],
                     };
                 }
@@ -53,6 +54,55 @@ exports.getMenusWithCategories = async (req, res) => {
                     });
                 }
             }
+        }
+
+        // Format final: ubah object ke array dan bersihkan nested maps
+        const finalResult = Object.values(categoryMap).map(category => ({
+            ...category,
+            menus: Object.values(category.menus).map(menu => ({
+                ...menu,
+                addon_categories: Object.values(menu.addon_categories),
+            })),
+        }));
+
+        res.json(finalResult);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+exports.getAddonWithCategories = async (req, res) => {
+    try {
+        const userId = req.user.id; // pastikan middleware auth mengisi req.user
+        const rows = await Addon.getAddOnsByUserId(userId);
+
+        // Struktur data akhir: addon kategori → addons
+
+        const addonCategoryMap = menuMap[row.menu_id].addon_categories;
+
+        for (const row of rows) {
+            if (!row.addon_category_id) continue;
+
+            if (row.addon_category_id) {
+                if (!addonCategoryMap[row.addon_category_id]) {
+                    addonCategoryMap[row.addon_category_id] = {
+                        addon_category_id: row.addon_category_id,
+                        addon_category_name: row.addon_category_name,
+                        is_multiple_choice: row.is_multiple_choice === 1,
+                        addons: [],
+                    };
+                }
+
+                if (row.addon_id) {
+                    addonCategoryMap[row.addon_category_id].addons.push({
+                        addon_id: row.addon_id,
+                        addon_name: row.addon_name,
+                        addon_price: row.addon_price,
+                        addon_is_available: row.addon_is_available,
+                    });
+                }
+            }
+
         }
 
         // Format final: ubah object ke array dan bersihkan nested maps
