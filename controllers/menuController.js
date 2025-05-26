@@ -71,14 +71,14 @@ exports.getMenusWithCategories = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 exports.getAddonWithCategories = async (req, res) => {
     try {
-        const userId = req.user.id; // pastikan middleware auth mengisi req.user
-        const rows = await Addon.getAddOnsByUserId(userId);
+        const userId = req.user.id;
+        const rows = await Addon.getAddOnsByUserId(userId); // pastikan nama AddOn sudah diimport
 
-        // Struktur data akhir: addon kategori → addons
-
-        const addonCategoryMap = menuMap[row.menu_id].addon_categories;
+        // addon_category_id => { addon_category_name, is_multiple_choice, addons: [] }
+        const addonCategoryMap = {};
 
         for (const row of rows) {
             if (!row.addon_category_id) continue;
@@ -106,14 +106,7 @@ exports.getAddonWithCategories = async (req, res) => {
         }
 
         // Format final: ubah object ke array dan bersihkan nested maps
-        const finalResult = Object.values(categoryMap).map(category => ({
-            ...category,
-            menus: Object.values(category.menus).map(menu => ({
-                ...menu,
-                addon_categories: Object.values(menu.addon_categories),
-            })),
-        }));
-
+        const finalResult = Object.values(addonCategoryMap);
         res.json(finalResult);
     } catch (err) {
         console.error(err);

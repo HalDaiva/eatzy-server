@@ -14,8 +14,7 @@ const Addon = {
                 a.addon_is_available
             FROM users u
             JOIN canteens c ON c.canteen_id = u.user_id
-            JOIN menu_categories mc ON mc.canteen_id = c.canteen_id
-            LEFT JOIN addon_categories ac ON canteen_id = c.canteen_id
+            LEFT JOIN addon_categories ac ON ac.canteen_id = c.canteen_id
             LEFT JOIN addons a ON a.addon_category_id = ac.addon_category_id
             WHERE u.user_id = ? AND u.role = 'canteen'
         `;
