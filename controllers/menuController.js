@@ -114,18 +114,100 @@ exports.getAddonWithCategories = async (req, res) => {
     }
 };
 
+exports.createMenu = async (req, res) => {
+    const connection = await require('../config/db').getConnection();
+    try {
+        await connection.beginTransaction();
 
+        const {
+            menu_category_id,
+            menu_name,
+            menu_price,
+            preparation_time,
+            menu_image,
+            menu_is_available,
+            addon_category_ids = [], // array of addon category ids
+        } = req.body;
+
+        // Validasi sederhana
+        if (!menu_category_id || !menu_name || !menu_price) {
+            return res.status(400).json({ error: 'Field tidak lengkap' });
+        }
+
+        const menuId = await Menu.createMenu({
+            menu_category_id,
+            menu_name,
+            menu_price,
+            preparation_time,
+            menu_image,
+            menu_is_available,
+        }, connection);
+
+        if (addon_category_ids.length > 0) {
+            await Menu.linkMenuWithAddonCategories(menuId, addon_category_ids, connection);
+        }
+
+        await connection.commit();
+        res.status(201).json({ message: 'Menu berhasil ditambahkan', menu_id: menuId });
+    } catch (err) {
+        await connection.rollback();
+        console.error(err);
+        res.status(500).json({ error: 'Gagal menambahkan menu' });
+    } finally {
+        connection.release();
+    }
+};
+
+// Update kategori menu
+exports.updateCategoryName = async (req, res) => {
+    try {
+        const { menu_category_id, menu_category_name } = req.body;
+
+        await Menu.updateCategoryName(menu_category_id, menu_category_name);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update category' });
+    }
+};
+
+// Hapus kategori menu berdasarkan ID
+exports.deleteCategory = async (req, res) => {
+    try {
+        const menu_category_id = req.body.menu_category_id;
+        
+        await Menu.deleteCategoryById(menu_category_id);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete category' });
+    }
+};
+
+// Hapus menu berdasarkan ID
 exports.deleteMenu = async (req, res) => {
     try {
         const menuId = req.params.id;
-        const result = await Menu.deleteMenuById(menuId);
+        
+        await Menu.deleteMenuById(menuId);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete menu' });
+    }
+};
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Menu not found' });
-        }
 
-        res.json({ message: 'Menu deleted successfully' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+// Toggle menu availability (aktif/nonaktif)
+exports.toggleMenuAvailability = async (req, res) => {
+    try {
+        const menuId = req.params.id;
+        const { menu_is_available } = req.body;
+
+        await Menu.toggleMenuAvailability(menuId, menu_is_available);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to toggle menu availability' });
     }
 };
