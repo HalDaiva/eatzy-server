@@ -2,6 +2,7 @@ const User = require('../models/userModel');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const transporter = require('../config/transporter');
+const {sendNotification} = require("../services/notificationService");
 
 exports.login = async (req,res) => {
     try {
@@ -14,6 +15,13 @@ exports.login = async (req,res) => {
         const user = results;
         console.log(user);
         const isMatch = await bcrypt.compare(req.body.password, user.password);
+
+        // CONTOH BUAT NGIRIM NOTIFIKASI (USER_ID HARUS PUNYA DEVICE_TOKEN DI DATABASE)
+        sendNotification(
+            user.user_id,
+            "Anda telah login ke Eatzy!",
+            "Selamat datang di Eatzy. Kamu telah login sebagai " + user.role + "."
+        )
 
         if (!isMatch) {
             return res.status(401).json({ error: "Email atau password salah." });
@@ -35,13 +43,13 @@ exports.login = async (req,res) => {
 
 exports.register = async (req, res) => {
     try{
-
         const results = await User.getByEmail(req.body);
 
         if(results) {
             return res.status(401).json({ error: "Akun dengan email ini telah terdaftar" });
         } else {
             const registredUser = await User.create(req.body);
+            console.log(registredUser);
             res.status(200).json(registredUser);
         }
 
