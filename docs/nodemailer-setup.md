@@ -27,7 +27,7 @@
    EMAIL_SECURE=false                      # Keep as is
    ```
 ## Send Emails
-1. To see how you can send email, check `conrollers/testController.js`
+1. To see how you can send email, check `controllers/testController.js`
 2. There, you will find a function called `sendEmail`
 3. You can use that code as a reference to setup your code for sending emails
 
