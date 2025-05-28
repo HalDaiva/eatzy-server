@@ -11,6 +11,7 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
+
 exports.getUserById = async (req, res) => {
     try {
         const user = await User.getById(req.params.id);
@@ -28,6 +29,16 @@ exports.updateUser = async (req, res) => {
         res.status(500).json({error: e});
     }
 };
+
+exports.updateDeviceToken = async (req, res) => {
+    try {
+        const result = await User.updateDeviceToken(req.user.id, req.body.deviceToken);
+        console.log(result);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({error: e});
+    }
+}
 
 exports.deleteUser = async (req, res) => {
     try {
