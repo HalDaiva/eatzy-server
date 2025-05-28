@@ -1,6 +1,30 @@
 const db = require('../config/db');
 
 const Menu = {
+
+    async checkMenuOwnership(menu_id, user_id) {
+        const query = `
+        SELECT 1 FROM menus m
+        JOIN menu_categories mc ON m.menu_category_id = mc.menu_category_id
+        JOIN canteens c ON mc.canteen_id = c.canteen_id
+        WHERE m.menu_id = ? AND c.canteen_id = ?
+        LIMIT 1
+        `;
+        const [rows] = await db.query(query, [menu_id, user_id]);
+        return rows.length > 0;
+    },
+
+    async checkCategoryOwnership(category_id, user_id) {
+        const query = `
+        SELECT 1 FROM menu_categories mc
+        JOIN canteens c ON mc.canteen_id = c.canteen_id
+        WHERE mc.menu_category_id = ? AND c.canteen_id = ?
+        LIMIT 1
+        `;
+        const [rows] = await db.query(query, [category_id, user_id]);
+        return rows.length > 0;
+    },
+
     // Ambil menu beserta kategori dan add-on
     async getMenusWithAddOnsByUserId(userId) {
         const query = `
@@ -34,11 +58,15 @@ const Menu = {
         return rows;
     },
 
-    // Hapus menu berdasarkan ID
     async deleteMenuById(id) {
+        // Hapus dulu data terkait di menu_addon_categories
+        await db.query('DELETE FROM menu_addon_categories WHERE menu_id = ?', [id]);
+
+        // Baru hapus dari menus
         const [result] = await db.query('DELETE FROM menus WHERE menu_id = ?', [id]);
         return result;
     },
+
 
     async createMenu(menuData, connection) {
         const {
@@ -87,12 +115,58 @@ const Menu = {
         return await db.query('DELETE FROM menu_categories WHERE menu_category_id = ?', [id]);
     },
 
+    async deleteMenuByCategory(id) {
+        return await db.query('DELETE FROM menus WHERE menu_category_id = ?', [id]);
+    },
+
     async toggleMenuAvailability(menu_id, isAvailable) {
         return await db.query(
             'UPDATE menus SET menu_is_available = ? WHERE menu_id = ?',
             [isAvailable ? 1 : 0, menu_id]
         );
-    }
+    },
+
+    async updateMenu(menu_id, updatedData){
+       
+    const {
+        menu_category_id,
+        menu_name,
+        menu_price,
+        preparation_time,
+        menu_image
+    } = updatedData;
+
+    const query = `
+        UPDATE menus 
+        SET 
+            menu_category_id = ?,
+            menu_name = ?, 
+            menu_price = ?, 
+            preparation_time = ?, 
+            menu_image = ?
+        WHERE menu_id = ?
+    `;
+
+    return await db.query(query, [
+        menu_category_id,
+        menu_name,
+        menu_price,
+        preparation_time,
+        menu_image,
+        menu_id
+    ]);
+    },
+
+    // Ambil menu beserta kategori dan add-on
+    async getMenuItem(menu_id) {
+        const query = `
+            SELECT * FROM menus 
+            WHERE menu_id = ?
+        `;
+        const [rows] = await db.query(query, menu_id);
+        return rows;
+    },
+
 };
 
 module.exports = Menu;
