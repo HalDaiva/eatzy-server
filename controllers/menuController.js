@@ -260,7 +260,7 @@ exports.getMenuItem = async(req, res) =>{
             return res.status(403).json({ error: 'Akses ditolak: menu bukan milik Anda' });
         }
 
-        const menu = await Menu.getMenuItem(parseInt(menuId));
+        const menu = await Menu.getMenuItem(menuId);
 
         if (!menu) {
             return res.status(404).json({ message: "Menu not found." });
@@ -271,7 +271,7 @@ exports.getMenuItem = async(req, res) =>{
         console.error("Error in getMenuItem:", error);
         res.status(500).json({ error: 'Failed to getMenuItem' });
     }
-}
+};
 
 //update menu
 exports.updateMenu = async (req, res) => {
@@ -312,3 +312,73 @@ exports.updateMenu = async (req, res) => {
     }
 };
 
+//ambil menu by id
+exports.getMenuCategoryList = async(req, res) =>{
+    try {        
+        const canteen_id = req.user.id;
+
+        const categories = await Menu.getMenuCategoryList(canteen_id);
+
+        if (!categories) {
+            return res.status(404).json({ message: "categories not found." });
+        }
+
+        res.status(200).json(categories);
+    } catch (error) {
+        console.error("Error in getMenuCategoryList:", error);
+        res.status(500).json({ error: 'Failed to getMenuCategoryList' });
+    }
+};
+
+//create kategori menu
+exports.createMenuCategory = async (req, res) => {
+    const connection = await require('../config/db').getConnection();
+    try {
+        const canteen_id = req.user.id;
+        await connection.beginTransaction();
+
+        const {
+            menu_category_id,
+            menu_name,
+            menu_price,
+            preparation_time,
+            menu_image,
+            addon_category_ids = [], // array of addon category ids
+        } = req.body;
+
+        // Validasi sederhana
+        if (!menu_category_id || !menu_name || !menu_price) {
+            return res.status(400).json({ error: 'Field tidak lengkap' });
+        }
+
+        const userId = req.user.id;
+
+        // Cek apakah kategori tersebut milik kantin user
+        const isOwner = await Menu.checkCategoryOwnership(menu_category_id, userId);
+        if (!isOwner) {
+            return res.status(403).json({ error: 'Akses ditolak: kategori bukan milik Anda' });
+        }
+
+        const menuId = await Menu.createMenu({
+            menu_category_id,
+            menu_name,
+            menu_price,
+            preparation_time,
+            menu_image,
+            menu_is_available : true,
+        }, connection);
+
+        if (addon_category_ids.length > 0) {
+            await Menu.linkMenuWithAddonCategories(menuId, addon_category_ids, connection);
+        }
+
+        await connection.commit();
+        res.status(201).json({ message: 'Menu berhasil ditambahkan', menu_id: menuId });
+    } catch (err) {
+        await connection.rollback();
+        console.error(err);
+        res.status(500).json({ error: 'Gagal menambahkan menu' });
+    } finally {
+        connection.release();
+    }
+};

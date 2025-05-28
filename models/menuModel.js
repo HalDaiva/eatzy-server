@@ -25,6 +25,17 @@ const Menu = {
         return rows.length > 0;
     },
 
+    async checkCanteenOwnership(canteen_id, user_id) {
+        const query = `
+        SELECT 1 FROM canteens c
+        JOIN users u ON c.canteen_id = u.user_id
+        WHERE c.canteen_id = ? AND u.user_id = ? AND u.role = 'canteen'
+        LIMIT 1
+        `;
+        const [rows] = await db.query(query, [canteen_id, user_id]);
+        return rows.length > 0;
+    },
+
     // Ambil menu beserta kategori dan add-on
     async getMenusWithAddOnsByUserId(userId) {
         const query = `
@@ -126,17 +137,17 @@ const Menu = {
         );
     },
 
-    async updateMenu(menu_id, updatedData){
-       
-    const {
-        menu_category_id,
-        menu_name,
-        menu_price,
-        preparation_time,
-        menu_image
-    } = updatedData;
+    async updateMenu(menu_id, updatedData) {
 
-    const query = `
+        const {
+            menu_category_id,
+            menu_name,
+            menu_price,
+            preparation_time,
+            menu_image
+        } = updatedData;
+
+        const query = `
         UPDATE menus 
         SET 
             menu_category_id = ?,
@@ -147,14 +158,14 @@ const Menu = {
         WHERE menu_id = ?
     `;
 
-    return await db.query(query, [
-        menu_category_id,
-        menu_name,
-        menu_price,
-        preparation_time,
-        menu_image,
-        menu_id
-    ]);
+        return await db.query(query, [
+            menu_category_id,
+            menu_name,
+            menu_price,
+            preparation_time,
+            menu_image,
+            menu_id
+        ]);
     },
 
     // Ambil menu beserta kategori dan add-on
@@ -165,6 +176,35 @@ const Menu = {
         `;
         const [rows] = await db.query(query, menu_id);
         return rows;
+    },
+
+    //ambil kategori
+    async getMenuCategoryList(canteen_id) {
+        const query = `
+            SELECT * FROM menu_categories 
+            WHERE canteen_id = ?
+        `;
+        const [rows] = await db.query(query, canteen_id);
+        return rows;
+    },
+
+    async createMenuCategory(categoryData, connection) {
+        const {
+            menu_category_name,
+            canteen_id
+        } = categoryData;
+
+        const [result] = await connection.query(
+            `INSERT INTO menu_categories 
+            (menu_category_name, canteen_id) 
+            VALUES (?, ?)`,
+            [
+                menu_category_name,
+                canteen_id
+            ]
+        );
+
+        return result.insertId;
     },
 
 };

@@ -29,6 +29,11 @@ router.patch('/updateMenu', authorize('canteen'), menuController.updateMenu);
 //ambil item menu v
 router.get('/menuItem/:id', authorize(), menuController.getMenuItem);
 
+//ambil list kategori menu v
+router.get('/categoryList/:id', authorize(), menuController.getMenuCategoryList);
+
+//create kategori menu
+
 
 
 
