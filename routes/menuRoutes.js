@@ -12,7 +12,7 @@ router.get('/menu', authorize(), menuController.getMenusWithCategories);
 router.post('/menu/createMenu',  authorize('canteen'), menuController.createMenu);
 
 //Update nama kategori menu v
-router.patch('/categories', authorize('canteen'), menuController.updateCategoryName);
+router.put('/categories', authorize('canteen'), menuController.updateCategoryName);
 
 //Hapus kategori menu berdasarkan ID v
 router.delete('/deleteCategoriesMenu', authorize('canteen'), menuController.deleteCategory);
@@ -21,10 +21,10 @@ router.delete('/deleteCategoriesMenu', authorize('canteen'), menuController.dele
 router.delete('/deleteMenus', authorize('canteen'), menuController.deleteMenu);
 
 //Update ketersediaan menu v
-router.patch('/availableMenu', authorize('canteen'), menuController.toggleMenuAvailability);
+router.put('/availableMenu', authorize('canteen'), menuController.toggleMenuAvailability);
 
 //Update menu by id v
-router.patch('/updateMenu', authorize('canteen'), menuController.updateMenu);
+router.put('/menus/:id', authorize('canteen'), menuController.updateMenu);
 
 //ambil item menu v
 router.get('/menuItem/:id', authorize(), menuController.getMenuItem);
@@ -32,14 +32,29 @@ router.get('/menuItem/:id', authorize(), menuController.getMenuItem);
 //ambil list kategori menu v
 router.get('/categoryList/:id', authorize(), menuController.getMenuCategoryList);
 
-//create kategori menu
-
-
+//create kategori menu v
+router.post('/createMenuCategory',authorize('canteen'), menuController.createMenuCategory);
 
 
 //===================== AddOn =====================//
 
-//ambil semua addon dan kategorinya
+//ambil semua addon dan kategorinya v
 router.get('/addon', authorize(), menuController.getAddonWithCategories);
+
+// create and edit kategori addOn v
+router.post('/addon', authorize('canteen'), menuController.createAddonCategory);
+
+// Edit kategori yang sudah ada v
+router.put('/addon/:id', authorize('canteen'), menuController.updateAddonCategory);
+
+
+
+
+
+
+
+
+
+
 
 module.exports = router;

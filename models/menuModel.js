@@ -137,36 +137,40 @@ const Menu = {
         );
     },
 
-    async updateMenu(menu_id, updatedData) {
-
-        const {
-            menu_category_id,
-            menu_name,
-            menu_price,
-            preparation_time,
-            menu_image
-        } = updatedData;
-
-        const query = `
-        UPDATE menus 
-        SET 
-            menu_category_id = ?,
-            menu_name = ?, 
-            menu_price = ?, 
-            preparation_time = ?, 
-            menu_image = ?
-        WHERE menu_id = ?
+  async updateMenu(menu_id, data) {
+    const { menu_name, preparation_time, menu_image, menu_price, menu_is_available, menu_category_id } = data;
+    const query = `
+      UPDATE menus SET 
+        menu_name = ?, 
+        preparation_time = ?, 
+        menu_image = ?, 
+        menu_price = ?, 
+        menu_is_available = ?, 
+        menu_category_id = ?, 
+        updated_at = NOW()
+      WHERE menu_id = ?
     `;
+    await db.query(query, [
+      menu_name,
+      preparation_time,
+      menu_image,
+      menu_price,
+      menu_is_available,
+      menu_category_id,
+      menu_id
+    ]);
+  },
 
-        return await db.query(query, [
-            menu_category_id,
-            menu_name,
-            menu_price,
-            preparation_time,
-            menu_image,
-            menu_id
-        ]);
-    },
+  async updateMenuAddonCategories(menu_id, addon_category_ids) {
+    // Clear old ones
+    await db.query('DELETE FROM menu_addon_categories WHERE menu_id = ?', [menu_id]);
+
+    // Insert new ones
+    if (addon_category_ids.length > 0) {
+      const values = addon_category_ids.map(id => [menu_id, id]);
+      await db.query('INSERT INTO menu_addon_categories (menu_id, addon_category_id) VALUES ?', [values]);
+    }
+  },
 
     // Ambil menu beserta kategori dan add-on
     async getMenuItem(menu_id) {
@@ -205,7 +209,7 @@ const Menu = {
         );
 
         return result.insertId;
-    },
+    }
 
 };
 
