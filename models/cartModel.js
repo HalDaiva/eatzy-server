@@ -1,27 +1,27 @@
 const db = require('../config/db');
 
 const Cart = {
-    async getAll() {
-        const [rows] = await db.query(`
-            SELECT o.order_id AS order_id, c.canteen_name, o.total_price AS total_price
+    async getCartByUserId(userId) {
+        const [orders] = await db.query(`
+            SELECT o.order_id, o.buyer_id, c.canteen_name, o.total_price
             FROM orders o
             JOIN canteens c ON o.canteen_id = c.canteen_id
-            WHERE o.order_status = 'in_cart'
-        `);
+            WHERE o.buyer_id = ? AND o.order_status = 'in_cart'
+        `, [userId]);
 
-        for (const cart of rows) {
+        for (const order of orders) {
             const [items] = await db.query(`
                 SELECT 
-                    oi.order_item_id,
-                    oi.menu_id,
-                    m.menu_name,
-                    oi.item_details,
-                    m.menu_image,
-                    m.menu_price
+                    oi.order_item_id, 
+                    oi.menu_id, 
+                    m.menu_name, 
+                    m.menu_price, 
+                    oi.item_details AS note, 
+                    m.menu_image
                 FROM order_items oi
                 JOIN menus m ON oi.menu_id = m.menu_id
                 WHERE oi.order_id = ?
-            `, [cart.order_id]);
+            `, [order.order_id]);
 
             for (const item of items) {
                 const [addons] = await db.query(`
@@ -31,75 +31,40 @@ const Cart = {
                     WHERE oia.order_item_id = ?
                 `, [item.order_item_id]);
 
-                item.addons = addons.map(addon => addon.addon_name);
-
-                // Hapus order_item_id agar tidak tampil di frontend jika tidak perlu
-                delete item.order_item_id;
+                item.addons = addons.map(a => a.addon_name);
+                delete item.order_item_id; // jangan kirim ke frontend
             }
 
-            cart.items = items;
+            order.items = items;
         }
 
-        return rows;
+        return orders; // ✅ return sebagai array of carts
     },
 
-    async getById(cartId) {
-        const [rows] = await db.query(`
-            SELECT o.order_id AS order_id, c.canteen_name, o.total_price AS total_price
-            FROM orders o
-            JOIN canteens c ON o.canteen_id = c.canteen_id
-            WHERE o.order_id = ? AND o.order_status = 'in_cart'
-        `, [cartId]);
+    async deleteCart(userId) {
+        const [orders] = await db.query(`
+            SELECT order_id FROM orders
+            WHERE buyer_id = ? AND order_status = 'in_cart'
+        `, [userId]);
 
-        if (rows.length === 0) return null;
+        for (const { order_id }
+            of orders) {
+            const [itemIds] = await db.query(`
+                SELECT order_item_id FROM order_items WHERE order_id = ?
+            `, [order_id]);
 
-        const cart = rows[0];
+            for (const { order_item_id }
+                of itemIds) {
+                await db.query(`
+                    DELETE FROM order_item_addons WHERE order_item_id = ?
+                `, [order_item_id]);
+            }
 
-        const [items] = await db.query(`
-            SELECT 
-                oi.order_item_id,
-                oi.menu_id,
-                m.menu_name,
-                oi.item_details,
-                m.menu_image,
-                m.menu_price
-            FROM order_items oi
-            JOIN menus m ON oi.menu_id = m.menu_id
-            WHERE oi.order_id = ?
-        `, [cartId]);
-
-        for (const item of items) {
-            const [addons] = await db.query(`
-                SELECT a.addon_name
-                FROM order_item_addons oia
-                JOIN addons a ON oia.addon_id = a.addon_id
-                WHERE oia.order_item_id = ?
-            `, [item.order_item_id]);
-
-            item.addons = addons.map(addon => addon.addon_name);
-            delete item.order_item_id;
+            await db.query('DELETE FROM order_items WHERE order_id = ?', [order_id]);
+            await db.query('DELETE FROM orders WHERE order_id = ?', [order_id]);
         }
 
-        cart.items = items;
-
-        return cart;
-    },
-
-    async deleteCart(cartId) {
-        // Hapus data addons terlebih dahulu
-        const [itemIds] = await db.query(`
-            SELECT order_item_id FROM order_items WHERE order_id = ?
-        `, [cartId]);
-
-        for (const { order_item_id }
-            of itemIds) {
-            await db.query(`DELETE FROM order_item_addons WHERE order_item_id = ?`, [order_item_id]);
-        }
-
-        await db.query('DELETE FROM order_items WHERE order_id = ?', [cartId]);
-        await db.query('DELETE FROM orders WHERE order_id = ?', [cartId]);
-
-        return { message: 'Cart deleted' };
+        return { message: 'All carts deleted' };
     }
 };
 

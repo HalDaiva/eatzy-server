@@ -1,31 +1,32 @@
 const Cart = require('../models/cartModel');
+const jwt = require("jsonwebtoken");
+const { authorize } = require('../middleware/authorize');
 
-exports.getAllCarts = async(req, res) => {
+exports.getCartByUser = async(req, res) => {
     try {
-        const carts = await Cart.getAll();
-        res.json(carts);
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-};
+        const userId = req.user.id;
 
-exports.getCartById = async(req, res) => {
-    try {
-        const cart = await Cart.getById(req.params.id);
-        if (!cart) {
-            return res.status(404).json({ message: 'Cart not found' });
+        const cart = await Cart.getCartByUserId(userId);
+
+        if (!cart || cart.length === 0) {
+            return res.status(404).json({ message: 'No cart found' });
         }
-        res.json(cart);
-    } catch (e) {
-        res.status(500).json({ error: e.message });
+
+        res.json(cart); // ✅ return sebagai array
+    } catch (error) {
+        console.error("Cart Error:", error.message);
+        res.status(500).json({ error: error.message });
     }
 };
 
 exports.deleteCart = async(req, res) => {
     try {
-        const result = await Cart.deleteCart(req.params.id);
+        const userId = req.user.id;
+
+        const result = await Cart.deleteCart(userId);
         res.json(result);
-    } catch (e) {
-        res.status(500).json({ error: e.message });
+    } catch (error) {
+        console.error("Delete Cart Error:", error.message);
+        res.status(500).json({ error: error.message });
     }
 };
