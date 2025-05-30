@@ -41,19 +41,23 @@ router.post('/createMenuCategory',authorize('canteen'), menuController.createMen
 //ambil semua addon dan kategorinya v
 router.get('/addon', authorize(), menuController.getAddonWithCategories);
 
-// create and edit kategori addOn v
+// create kategori addOn v
 router.post('/addon', authorize('canteen'), menuController.createAddonCategory);
 
 // Edit kategori yang sudah ada v
 router.put('/addon/:id', authorize('canteen'), menuController.updateAddonCategory);
 
+//buka tutup addon item v
+router.put('/availableAddon', authorize('canteen'), menuController.toggleAddOnAvailability);
 
+//Hapus kategori Addon berdasarkan ID v
+router.delete('/deleteCategoriesAddon', authorize('canteen'), menuController.deleteCategory);
 
+//Hapus Addon berdasarkan ID v
+router.delete('/deleteAddons', authorize('canteen'), menuController.deleteAddon);
 
-
-
-
-
+//update addon item
+router.patch('/updateAddon/:id', authorize('canteen'), menuController.editAddon);
 
 
 

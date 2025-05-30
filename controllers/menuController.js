@@ -363,7 +363,7 @@ exports.getAddonWithCategories = async (req, res) => {
 exports.createAddonCategory = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { addon_category_name, is_multiple_choice, addons } = req.body;
+        const { addon_category_name, is_multiple_choice = true, addons } = req.body;
 
         const categoryId = await Addon.createAddonCategory(userId, addon_category_name, is_multiple_choice ? 1 : 0);
         await Addon.insertAddons(addons, categoryId);
@@ -395,4 +395,96 @@ exports.updateAddonCategory = async (req, res) => {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
+};
+
+//avail addon
+exports.toggleAddOnAvailability = async (req, res) => {
+    try {
+        const addonId = req.body.id;
+        const { addon_is_available } = req.body;
+
+        const userId = req.user.id;
+
+        const isOwner = await Addon.checkAddonOwnership(addonId, userId);
+        if (!isOwner) {
+            return res.status(403).json({ error: 'Akses ditolak: addon bukan milik Anda' });
+        }
+
+        await Addon.toggleAddonAvailability(addonId, addon_is_available);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error in toggleaddonAvailability:", error);
+        res.status(500).json({ error: 'Failed to toggle addon availability' });
+    }
+};
+
+
+// Hapus kategori addon berdasarkan ID
+exports.deleteCategory = async (req, res) => {
+    try {
+        const addon_category_id = req.body.addon_category_id;
+
+        const userId = req.user.id;
+
+        const isOwner = await Addon.checkCategoryOwnership(addon_category_id, userId);
+        if (!isOwner) {
+            return res.status(403).json({ error: 'Akses ditolak: kategori bukan milik Anda' });
+        }
+
+        await Addon.deleteAddonByCategory(addon_category_id);
+        await Addon.deleteCategoryById(addon_category_id);
+
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error in deleteCategory:", error);
+        res.status(500).json({ error: 'Failed to delete category' });
+    }
+};
+
+// Hapus addon berdasarkan ID
+exports.deleteAddon = async (req, res) => {
+    try {
+        const addonId = req.body.id;
+        const userId = req.user.id;
+
+        const isOwner = await Addon.checkAddonOwnership(addonId, userId);
+        if (!isOwner) {
+            return res.status(403).json({ error: 'Akses ditolak: addon bukan milik Anda' });
+        }
+
+        await Addon.deleteAddonById(addonId);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Error in deleteaddon:", error);
+        res.status(500).json({ error: 'Failed to delete addon' });
+    }
+};
+
+exports.editAddon = async (req, res) => {
+  try {
+    const addon_id = req.params.id;
+    const {
+      addon_name,
+      addon_price,
+      addon_is_available,
+      addon_category_id
+    } = req.body;
+
+    const updateFields = {
+      addon_name,
+      addon_price,
+      addon_is_available,
+      addon_category_id
+    };
+
+    const result = await Addon.updateAddonById(addon_id, updateFields);
+
+    res.status(200).json({
+      message: 'Add-on berhasil diperbarui',
+      result
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 };
