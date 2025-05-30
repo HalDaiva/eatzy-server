@@ -127,8 +127,19 @@ const Menu = {
     },
 
     async deleteMenuByCategory(id) {
+        const [menus] = await db.query('SELECT menu_id FROM menus WHERE menu_category_id = ?', [id]);
+
+        if (menus.length > 0) {
+            const menuIds = menus.map(menu => menu.menu_id);
+            await db.query(
+                `DELETE FROM menu_addon_categories WHERE menu_id IN (${menuIds.map(() => '?').join(',')})`,
+                menuIds
+            );
+        }
+
         return await db.query('DELETE FROM menus WHERE menu_category_id = ?', [id]);
     },
+
 
     async toggleMenuAvailability(menu_id, isAvailable) {
         return await db.query(
@@ -137,9 +148,9 @@ const Menu = {
         );
     },
 
-  async updateMenu(menu_id, data) {
-    const { menu_name, preparation_time, menu_image, menu_price, menu_is_available, menu_category_id } = data;
-    const query = `
+    async updateMenu(menu_id, data) {
+        const { menu_name, preparation_time, menu_image, menu_price, menu_is_available, menu_category_id } = data;
+        const query = `
       UPDATE menus SET 
         menu_name = ?, 
         preparation_time = ?, 
@@ -150,27 +161,27 @@ const Menu = {
         updated_at = NOW()
       WHERE menu_id = ?
     `;
-    await db.query(query, [
-      menu_name,
-      preparation_time,
-      menu_image,
-      menu_price,
-      menu_is_available,
-      menu_category_id,
-      menu_id
-    ]);
-  },
+        await db.query(query, [
+            menu_name,
+            preparation_time,
+            menu_image,
+            menu_price,
+            menu_is_available,
+            menu_category_id,
+            menu_id
+        ]);
+    },
 
-  async updateMenuAddonCategories(menu_id, addon_category_ids) {
-    // Clear old ones
-    await db.query('DELETE FROM menu_addon_categories WHERE menu_id = ?', [menu_id]);
+    async updateMenuAddonCategories(menu_id, addon_category_ids) {
+        // Clear old ones
+        await db.query('DELETE FROM menu_addon_categories WHERE menu_id = ?', [menu_id]);
 
-    // Insert new ones
-    if (addon_category_ids.length > 0) {
-      const values = addon_category_ids.map(id => [menu_id, id]);
-      await db.query('INSERT INTO menu_addon_categories (menu_id, addon_category_id) VALUES ?', [values]);
-    }
-  },
+        // Insert new ones
+        if (addon_category_ids.length > 0) {
+            const values = addon_category_ids.map(id => [menu_id, id]);
+            await db.query('INSERT INTO menu_addon_categories (menu_id, addon_category_id) VALUES ?', [values]);
+        }
+    },
 
     // Ambil menu beserta kategori dan add-on
     async getMenuItem(menu_id) {

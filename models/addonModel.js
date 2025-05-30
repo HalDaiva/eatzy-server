@@ -145,7 +145,16 @@ const Addon = {
 
     const [result] = await db.query(query, values);
     return result;
-  }
+  },
+  //ambil kategori
+    async getAddonCategoryList(canteen_id) {
+        const query = `
+            SELECT * FROM addon_categories 
+            WHERE canteen_id = ?
+        `;
+        const [rows] = await db.query(query, canteen_id);
+        return rows;
+    }
 
 };
 

@@ -127,7 +127,8 @@ exports.createMenu = async (req, res) => {
 // Update kategori menu
 exports.updateCategoryName = async (req, res) => {
     try {
-        const { menu_category_id, menu_category_name } = req.body;
+        const menu_category_id = req.params.id;
+        const menu_category_name  = req.body.menu_category_name;
 
         const userId = req.user.id;
 
@@ -147,8 +148,7 @@ exports.updateCategoryName = async (req, res) => {
 // Hapus kategori menu berdasarkan ID
 exports.deleteCategory = async (req, res) => {
     try {
-        const menu_category_id = req.body.menu_category_id;
-
+        const menu_category_id = req.params.id;
         const userId = req.user.id;
 
         const isOwner = await Menu.checkCategoryOwnership(menu_category_id, userId);
@@ -169,7 +169,7 @@ exports.deleteCategory = async (req, res) => {
 // Hapus menu berdasarkan ID
 exports.deleteMenu = async (req, res) => {
     try {
-        const menuId = req.body.id;
+        const menuId = req.params.id;
         const userId = req.user.id;
 
         const isOwner = await Menu.checkMenuOwnership(menuId, userId);
@@ -188,8 +188,8 @@ exports.deleteMenu = async (req, res) => {
 // Toggle menu availability (aktif/nonaktif)
 exports.toggleMenuAvailability = async (req, res) => {
     try {
-        const menuId = req.body.id;
-        const { menu_is_available } = req.body;
+        const menuId = req.params.id;
+        const menu_is_available  = req.body;
 
         const userId = req.user.id;
 
@@ -267,7 +267,7 @@ exports.updateMenu = async (req, res) => {
     }
 };
 
-//ambil menu by id
+//ambil menu kategori by id
 exports.getMenuCategoryList = async (req, res) => {
     try {
         const canteen_id = req.user.id;
@@ -400,8 +400,8 @@ exports.updateAddonCategory = async (req, res) => {
 //avail addon
 exports.toggleAddOnAvailability = async (req, res) => {
     try {
-        const addonId = req.body.id;
-        const { addon_is_available } = req.body;
+        const addonId = req.params.id;
+        const addon_is_available = req.body;
 
         const userId = req.user.id;
 
@@ -420,9 +420,9 @@ exports.toggleAddOnAvailability = async (req, res) => {
 
 
 // Hapus kategori addon berdasarkan ID
-exports.deleteCategory = async (req, res) => {
+exports.deleteAddonCategory = async (req, res) => {
     try {
-        const addon_category_id = req.body.addon_category_id;
+        const addon_category_id = req.params.id;
 
         const userId = req.user.id;
 
@@ -444,7 +444,7 @@ exports.deleteCategory = async (req, res) => {
 // Hapus addon berdasarkan ID
 exports.deleteAddon = async (req, res) => {
     try {
-        const addonId = req.body.id;
+        const addonId = req.params.id;
         const userId = req.user.id;
 
         const isOwner = await Addon.checkAddonOwnership(addonId, userId);
@@ -487,4 +487,22 @@ exports.editAddon = async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+};
+
+//ambil addon kategori by id
+exports.getAddonCategoryList = async (req, res) => {
+    try {
+        const canteen_id = req.user.id;
+
+        const categories = await Addon.getAddonCategoryList(canteen_id);
+
+        if (!categories) {
+            return res.status(404).json({ message: "categories not found." });
+        }
+
+        res.status(200).json(categories);
+    } catch (error) {
+        console.error("Error in getaddonCategoryList:", error);
+        res.status(500).json({ error: 'Failed to getaddonCategoryList' });
+    }
 };
