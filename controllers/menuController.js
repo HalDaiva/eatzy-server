@@ -50,7 +50,7 @@ exports.getMenusWithCategories = async (req, res) => {
                         addon_id: row.addon_id,
                         addon_name: row.addon_name,
                         addon_price: row.addon_price,
-                        addon_is_available: row.addon_is_available,
+                        addon_is_available: row.addon_is_available === 1,
                     });
                 }
             }
@@ -344,7 +344,7 @@ exports.getAddonWithCategories = async (req, res) => {
                         addon_id: row.addon_id,
                         addon_name: row.addon_name,
                         addon_price: row.addon_price,
-                        addon_is_available: row.addon_is_available,
+                        addon_is_available: row.addon_is_available=== 1,
                     });
                 }
             }
