@@ -5,7 +5,7 @@ const {authorize} = require('../middleware/authorize');
 
 //===================== Menu =====================//
 
-//ambil semua menu v
+//ambil semua menu vv
 router.get('/menu', authorize(), menuController.getMenusWithCategories);
 
 // Tambah menu v
@@ -38,7 +38,7 @@ router.post('/createMenuCategory',authorize('canteen'), menuController.createMen
 
 //===================== AddOn =====================//
 
-//ambil semua addon dan kategorinya v
+//ambil semua addon dan kategorinya vv
 router.get('/addon', authorize(), menuController.getAddonWithCategories);
 
 // create kategori addOn v
