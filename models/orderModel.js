@@ -56,91 +56,73 @@ const OrderModel = {
 // },
 
   getAllByCanteen: async (status, canteenId) => {
-  let query = `
+  const [rawRows] = await db.query(`
     SELECT 
-      o.order_id, o.canteen_id, o.order_status, o.order_time, o.estimation_time, o.total_price,
+      o.order_id,
+      o.order_status,
+      o.order_time,
+      o.estimation_time,
+      o.total_price,
       oi.item_details,
-      m.menu_name, m.menu_image, m.menu_price
+      m.menu_name,
+      m.menu_image,
+      m.menu_price,
+      a.addon_name,
+      a.addon_price
     FROM orders o
     JOIN order_items oi ON o.order_id = oi.order_id
     JOIN menus m ON oi.menu_id = m.menu_id
+    LEFT JOIN order_item_addons oia ON oi.order_item_id = oia.order_item_id
+    LEFT JOIN addons a ON oia.addon_id = a.addon_id
     WHERE o.canteen_id = ?
-  `;
+    ${status !== 'Semua' ? 'AND o.order_status = ?' : ''}
+  `, [canteenId, ...(status !== 'Semua' ? [status] : [])]);
 
-  const params = [canteenId];
-
-  if (status !== 'Semua') {
-    query += ` AND o.order_status = ?`;
-    params.push(status);
-  }
-
-  const [rows] = await db.query(query, params);
-
-  // Gabungkan item per order
+  // Proses grouping dan hitung total
   const ordersMap = {};
-  for (const row of rows) {
+  
+  for (const row of rawRows) {
     if (!ordersMap[row.order_id]) {
       ordersMap[row.order_id] = {
         order_id: row.order_id,
-        canteen_id: row.canteen_id,
         order_status: row.order_status,
         order_time: row.order_time,
         estimation_time: row.estimation_time,
-        total_price: row.total_price,
+        total_price: row.total_price, 
         items: []
       };
     }
 
-    ordersMap[row.order_id].items.push({
-      menu_name: row.menu_name,
-      item_details: row.item_details,
-      menu_image: row.menu_image,
-      menu_price: row.menu_price
-    });
+    // Cari item yang sama
+    const existingItem = ordersMap[row.order_id].items.find(
+      item => item.menu_name === row.menu_name && item.item_details === row.item_details
+    );
+
+    // Hitung harga item + add-ons
+    // const itemBasePrice = parseFloat(row.menu_price) || 0;
+    // const addonPrice = row.addon_price ? parseFloat(row.addon_price) : 0;
+
+    if (!existingItem) {
+      ordersMap[row.order_id].items.push({
+        order_id: row.order_id,
+        menu_name: row.menu_name,
+        item_details: row.item_details,
+        menu_image: row.menu_image,
+        menu_price: row.menu_price,
+        add_on: row.addon_name || "" // Hanya string nama add-on
+      });
+    } else if (row.addon_name) {
+      existingItem.add_on += existingItem.add_on ? `, ${row.addon_name}` : row.addon_name;
+    }
+
+    // Tambahkan ke total_price (harga menu + add-on)
+    // ordersMap[row.order_id].total_price += itemBasePrice + addonPrice;
   }
 
-  return Object.values(ordersMap); // kembalikan dalam bentuk array
+  return Object.values(ordersMap);
 },
 
-  getById: async (order_id) => {
-  const query = `
-    SELECT 
-      o.order_id, o.canteen_id, o.order_status, o.order_time, o.estimation_time, o.total_price,
-      oi.item_details,
-      m.menu_name, m.menu_image, m.menu_price
-    FROM orders o
-    JOIN order_items oi ON o.order_id = oi.order_id
-    JOIN menus m ON oi.menu_id = m.menu_id
-    WHERE o.order_id = ?
-  `;
-
-  const [rows] = await db.query(query, [order_id]);
-
-  if (rows.length === 0) return null;
-
-  const result = {
-    order_id: rows[0].order_id,
-    canteen_id: rows[0].canteen_id,
-    order_status: rows[0].order_status,
-    order_time: rows[0].order_time,
-    estimation_time: rows[0].estimation_time,
-    total_price: rows[0].total_price,
-    items: []
-  };
-
-  for (const row of rows) {
-    result.items.push({
-      menu_name: row.menu_name,
-      item_details: row.item_details,
-      menu_image: row.menu_image,
-      menu_price: row.menu_price
-    });
-  }
-
-  return result;
-},
-
-  // Update status pesanan
+  // Update status pesanan berdasarkan id
   updateStatus: async (order_id, order_status) => {
     const [result] = await db.query(
       'UPDATE orders SET order_status = ? WHERE order_id = ?',

@@ -14,8 +14,6 @@ app.use("/users", userRoutes);
 app.use('/auth', authRoutes )
 app.use("/users", userRoutes);
 app.use("/test", testRoutes);
-
-//coba
 app.use('/orders', orderRoutes);
 
 app.listen(3002, () => {
