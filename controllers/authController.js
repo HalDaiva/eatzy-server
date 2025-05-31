@@ -30,7 +30,7 @@ exports.login = async (req, res) => {
         const token = jwt.sign(
             { id: user.user_id, email: user.email, role: user.role },
             process.env.TOKEN_KEY,
-            { expiresIn: '5m' }
+            { expiresIn: '180d' }
         );
         res.status(200).json({ token });
     } catch (e) {
@@ -41,6 +41,7 @@ exports.login = async (req, res) => {
 
 exports.register = async (req, res) => {
     try {
+        console.log('Register - req.body:', req.body);
         let { email, password, name } = req.body;
         if (!email || !password || !name) {
             return res.status(400).json({ error: 'Email, password, and name are required.' });
