@@ -6,6 +6,8 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const testRoutes = require('./routes/testRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
+
 
 const app = express();
 
@@ -13,10 +15,8 @@ app.use(express.json());
 app.use("/users", userRoutes);
 app.use('/auth', authRoutes )
 app.use("/users", userRoutes);
-app.use("/test", testRoutes);
-
-//coba
-app.use('/orders', orderRoutes);
+app.use("/orders", orderRoutes);
+app.use("/favorites", favoriteRoutes);
 
 app.listen(3002, () => {
     console.log("Server is running on http://localhost:3002");

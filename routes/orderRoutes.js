@@ -1,15 +1,10 @@
-const express = require('express')
-const router = express.Router()
-const orderController = require('../controllers/orderController')
-//tambah utk authorize
-const { authorize } = require('../middleware/authorize');
+const express = require('express');
+const router = express.Router();
+const orderController = require('../controllers/orderController');
+const {authorize} = require('../middleware/authorize');
 
-router.get('/', authorize(), orderController.getOrders)
-// router.get('/:order_id', orderController.getOrderById)
-//ambil order (harus login)
-router.get('/:order_id', authorize('canteen'), orderController.getOrderById)
-// router.put('/:order_id', orderController.updateOrderStatus)
-//update order (harus login)
-router.put('/:order_id', authorize('canteen'), orderController.updateOrderStatus)
+router.get('/', authorize("buyer"), orderController.getOrdersByBuyer);
+router.get('/:id', authorize(), orderController.getOrdersById);
+router.post('/duplicate/:id', authorize(), orderController.duplicateOrder);
 
-module.exports = router
+module.exports = router;
