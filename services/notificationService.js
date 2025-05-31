@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const serviceAccount = require("../firebase/eatzy-45153-firebase-adminsdk-fbsvc-d088ae54cd.json");
+const serviceAccount = require("../firebase/eatzy-45153-firebase-adminsdk-fbsvc-952548459a.json");
 const User = require("../models/userModel");
 
 admin.initializeApp({

@@ -11,7 +11,6 @@ const favoriteRoutes = require('./routes/favoriteRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const canteenRoutes = require('./routes/canteenRoutes');
 const menuRoutes = require('./routes/menuRoutes');
-const orderRoutes = require('./routes/orderRoutes');
 
 
 const app = express();
@@ -29,6 +28,6 @@ app.use("/sales", salesRoutes);
 app.use('/canteens',canteenRoutes);
 app.use('/menus',menuRoutes);
 
-app.listen(3002, () => {
+app.listen(3002,'0.0.0.0', () => {
     console.log("Server is running on http://localhost:3002");
 });
