@@ -7,7 +7,7 @@ exports.getAllUsers = async (req, res) => {
         const users = await User.getAll();
         res.json(users);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({error: e});
     }
 };
 
@@ -17,7 +17,7 @@ exports.getUserById = async (req, res) => {
         const user = await User.getById(req.params.id);
         res.json(user);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({error: e});
     }
 };
 
@@ -26,7 +26,7 @@ exports.updateUser = async (req, res) => {
         const user = await User.update(req.params.id, req.body);
         res.json(user);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({error: e});
     }
 };
 
@@ -36,7 +36,7 @@ exports.updateDeviceToken = async (req, res) => {
         console.log(result);
         res.json(result);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({error: e});
     }
 }
 
@@ -45,6 +45,6 @@ exports.deleteUser = async (req, res) => {
         const result = await User.delete(req.params.id)
         res.json(result);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({error: e});
     }
 };
