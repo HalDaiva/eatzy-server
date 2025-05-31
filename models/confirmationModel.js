@@ -37,12 +37,24 @@ const Confirmation = {
         return order;
     },
 
-    async updateOrderStatusToWaiting(order_id) {
+    async getOrderByIdAndUserId(order_id, user_id) {
+        const [orders] = await db.query(`
+            SELECT * FROM orders
+            WHERE order_id = ? AND buyer_id = ? AND order_status = 'in_cart'
+        `, [order_id, user_id]);
+
+        return orders.length > 0 ? orders[0] : null;
+    },
+
+    async updateOrderStatusToWaiting(order_id, scheduleTime) {
+        // Jika scheduleTime tidak diberikan, set default ke NOW()
+        const time = scheduleTime || new Date().toISOString().slice(0, 19).replace('T', ' ');
         await db.query(`
             UPDATE orders
-            SET order_status = 'waiting'
+            SET order_status = 'waiting',
+                schedule_time = ?
             WHERE order_id = ?
-        `, [order_id]);
+        `, [time, order_id]);
     }
 };
 

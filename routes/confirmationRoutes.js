@@ -3,9 +3,10 @@ const router = express.Router();
 const confirmationController = require('../controllers/confirmationController');
 const { authorize } = require('../middleware/authorize');
 
-router.get('/confirmed', authorize('buyer'), confirmationController.getConfirmedOrder);
-router.get('/confirmed/:order_id', authorize('buyer'), confirmationController.getOrderById);
-router.post('/confirm', authorize('buyer'), confirmationController.confirmOrder);
-router.post('/new', authorize('buyer'), confirmationController.createNewOrder);
+// Konfirmasi order (ubah status jadi 'waiting')
+router.patch('/confirm/:order_id', authorize('buyer'), confirmationController.confirmOrder);
+
+// Ambil detail order berdasarkan order_id
+router.get('/:order_id', authorize('buyer'), confirmationController.getOrderById);
 
 module.exports = router;
