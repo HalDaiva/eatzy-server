@@ -15,8 +15,8 @@ exports.login = async (req, res) => {
             console.log('User not found for email:', email);
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
-        //const isMatch = await bcrypt.compare(password, user.password);
-        const isMatch = password === user.password;
+        const isMatch = await bcrypt.compare(password, user.password);
+        // const isMatch = password === user.password;
         if (!isMatch) {
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
@@ -41,7 +41,7 @@ exports.login = async (req, res) => {
 
 exports.register = async (req, res) => {
     try {
-        const { email, password, name } = req.body;
+        let { email, password, name } = req.body;
         if (!email || !password || !name) {
             return res.status(400).json({ error: 'Email, password, and name are required.' });
         }
@@ -49,7 +49,8 @@ exports.register = async (req, res) => {
         if (existingUser) {
             return res.status(409).json({ error: 'Akun dengan email ini telah terdaftar.' });
         }
-        //const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        password = hashedPassword;
         const registeredUser = await User.create({ email, password, name });
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         await User.storeOtp(registeredUser.user_id, otp);
