@@ -1,13 +1,12 @@
 const nodemailer = require('nodemailer');
 
-// ini buat OTP tapi belum jadi
-
 const transporter = nodemailer.createTransport({
-    // service: process.env.EMAIL_SERVICE,
     host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: process.env.EMAIL_SECURE === 'true',
     auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASSWORD
+        user: process.env.EMAIL_ADDRESS,
+        pass: process.env.EMAIL_APP_PASSWORD
     }
 });
 
