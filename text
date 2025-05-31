@@ -1,0 +1,173 @@
+const User = require('../models/userModel');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
+
+// Constants
+const OTP_EXPIRY_MINUTES = 5;
+const SALT_ROUNDS = 10;
+const MAIL_FROM = '"Eatzy" <no-reply@eatzy.com>';
+
+// OTP Generator
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// Mail Transporter Configuration
+const transporter = nodemailer.createTransport({
+  host: "sandbox.smtp.mailtrap.io",
+  port: 2525,
+  auth: {
+    user: "67a1603dcb33a9",
+    pass: "a472344ebe51fb"
+  }
+});
+
+// Utility function to validate input
+const validateInput = (fields, res) => {
+  const missing = fields.filter(field => !field);
+  if (missing.length > 0) {
+    return res.status(400).json({ error: `Field(s) ${missing.join(', ')} harus diisi` });
+  }
+  return null;
+};
+
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    console.log('Login attempt for:', email);
+
+    // Validate input
+    const validationError = validateInput([email, password], res);
+    if (validationError) return validationError;
+
+    // Find user by email
+    const user = await User.getByEmail(email);
+    if (!user) {
+      console.log('User not found:', email);
+      return res.status(401).json({ error: 'Email atau password salah' });
+    }
+
+    // Verify password
+    let isMatch = await bcrypt.compare(password, user.password).catch(err => {
+      console.error('bcrypt.compare error:', err);
+      return false; // Fallback to false on error
+    });
+    if (!isMatch) {
+      console.log('Password mismatch for:', email);
+      return res.status(401).json({ error: 'Email atau password salah' });
+    }
+
+    // Check verification status
+    if (!user.is_verified) {
+      console.log('User not verified:', email);
+      return res.status(401).json({ error: 'Akun belum terverifikasi' });
+    }
+
+    // Successful login
+    console.log('Login successful for:', email);
+    res.status(200).json({
+      message: 'Login berhasil',
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Terjadi kesaluwarsa server' });
+  }
+};
+
+exports.register = async (req, res) => {
+  try {
+    const { name, email, password } = req.body || {};
+
+    // Validate input
+    const validationError = validateInput([name, email, password], res);
+    if (validationError) return validationError;
+
+    // Check if email exists
+    const existingUser = await User.getByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email sudah terdaftar' });
+    }
+
+    // Generate OTP and expiry
+    const otp = generateOTP();
+    const otpExpiredAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    console.log('Generated password hash length:', hashedPassword.length);
+
+    // Create new user
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'buyer',
+      is_verified: false,
+      otp_code: otp,
+      otp_expired_at: otpExpiredAt
+    });
+
+    // Send verification email
+    const mailOptions = {
+      from: MAIL_FROM,
+      to: email,
+      subject: 'Verifikasi Akun Eatzy',
+      text: `Halo ${name}, berikut kode OTP kamu: ${otp}. Berlaku selama ${OTP_EXPIRY_MINUTES} menit.`
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({
+      message: 'Registrasi berhasil, silakan verifikasi OTP di email',
+      user_id: newUser.user_id
+    });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ error: 'Terjadi kesaluwarsa server' });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body || {};
+
+    // Validate input
+    const validationError = validateInput([email, otp], res);
+    if (validationError) return validationError;
+
+    // Find user
+    const user = await User.getByEmail(email);
+    if (!user) {
+      console.log('User not found during OTP verification:', email);
+      return res.status(404).json({ error: 'User tidak ditemukan' });
+    }
+
+    // Check if already verified
+    if (user.is_verified) {
+      return res.status(400).json({ error: 'Akun sudah terverifikasi' });
+    }
+
+    // Verify OTP
+    if (user.otp_code !== otp) {
+      console.log('Invalid OTP:', otp, 'Expected:', user.otp_code);
+      return res.status(400).json({ error: 'Kode OTP salah' });
+    }
+
+    // Check OTP expiry
+    if (new Date(user.otp_expired_at) < new Date()) {
+      console.log('OTP expired at:', user.otp_expired_at);
+      return res.status(400).json({ error: 'Kode OTP sudah kedaluwarsa' });
+    }
+
+    // Update verification status
+    await User.updateVerificationStatus(user.user_id);
+    console.log('User verified:', user.user_id);
+
+    res.status(200).json({ message: 'Verifikasi berhasil, silakan login' });
+  } catch (err) {
+    console.error('OTP verification error:', err);
+    res.status(500).json({ error: 'Terjadi kesaluwarsa server' });
+  }
+};
