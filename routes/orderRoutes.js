@@ -7,9 +7,11 @@ const { authorize } = require('../middleware/authorize');
 router.get('/', authorize(), orderController.getOrders)
 // router.get('/:order_id', orderController.getOrderById)
 //ambil order (harus login)
-router.get('/:order_id', authorize('canteen'), orderController.getOrderById)
+router.get('/:id', authorize(), orderController.getOrdersById);
+router.post('/duplicate/:id', authorize(), orderController.duplicateOrder);
 // router.put('/:order_id', orderController.updateOrderStatus)
 //update order (harus login)
 router.put('/:order_id', authorize('canteen'), orderController.updateOrderStatus)
 
 module.exports = router
+
