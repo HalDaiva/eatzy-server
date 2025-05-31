@@ -90,6 +90,46 @@ const Menu = {
         };
         return menu;
     },
+
+    async getMenuByQuery(menuName) {
+        const keyword = `%${menuName}%`;
+        const [rows] = await db.query(
+            "SELECT m.menu_id, m.menu_name, m.menu_image, m.menu_is_available, m.menu_price, cte.canteen_id, cte.canteen_name, cte.canteen_is_open FROM menus AS m JOIN menu_categories AS mc ON m.menu_category_id = mc.menu_category_id JOIN canteens AS cte ON mc.canteen_id = cte.canteen_id WHERE m.menu_is_available = 1 AND cte.canteen_is_open = 1 AND m.menu_name LIKE ?",
+            [keyword]
+        );
+        let menus = [];
+
+        for (const row of rows) {
+            const menu = {
+                menu_id: row.menu_id,
+                menu_name: row.menu_name,
+                menu_image: row.menu_image,
+                menu_is_available: row.menu_is_available === 1,
+                menu_price: row.menu_price,
+                canteen_id: row.canteen_id,
+                canteen_name: row.canteen_name,
+                canteen_is_open: row.canteen_is_open === 1,
+            };
+            menus.push(menu);
+        }
+        return menus;
+    },
+
+    async createFavorite(buyerId, menuId) {
+        const [checkFav] = await db.query(
+            "SELECT COUNT(*) FROM favorites WHERE buyer_id = ? AND menu_id = ?;",
+            [buyerId, menuId]
+        );
+        if (checkFav[0]["COUNT(*)"] === 0) {    
+            const [result] = await db.query(
+                "INSERT INTO `favorites`(`buyer_id`, `menu_id`) VALUES (?,?)",
+                [buyerId, menuId]
+            );
+            return { message: "Succesfully added to favorites", alreadyExists: false };
+        } else {
+            return { message: "Already in favorites", alreadyExists: true };
+        }
+    },
 };
 
 module.exports = Menu;
