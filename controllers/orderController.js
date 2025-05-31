@@ -12,6 +12,24 @@ exports.getOrdersById = async (req, res) => {
     }
 };
 
+exports.checkIfOrderExistByStatus = async (req, res) => {
+    try {
+        const orders = await Order.getByStatusAndBuyer(req.params.status, req.user.id);
+        res.json(orders.length > 0);
+    } catch (e) {
+        res.status(500).json({error: e.message});
+    }
+}
+
+exports.duplicateOrder = async (req, res) => {
+    try {
+        const orderId = await Order.duplicateById(req.params.id, req.user.id);
+        res.json(orderId);
+    } catch (e) {
+        res.status(500).json({error: e.message});
+    }
+}
+
 exports.getOrdersByBuyer = async (req, res) => {
     try {
         const orders = await Order.getByBuyer(req.user.id);
