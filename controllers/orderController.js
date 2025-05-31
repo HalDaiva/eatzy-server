@@ -1,7 +1,20 @@
-
 const Order = require('../models/orderModel')
 const { authorize } = require('../middleware/authorize') 
 
+// exports.getOrders = async (req, res) => {
+//   try {
+//     //tambahan user
+//     const user = req.user;
+//     const status = req.query.status || 'Semua';
+//     const orders = await Order.getAllWithItems(status);
+    
+//     console.log("User:", user);
+//     // console.log(orders);
+//     res.json(orders);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message })
+//   } 
+// }
 
 //coba 
 exports.getOrders = async (req, res) => {
@@ -31,8 +44,6 @@ exports.getOrderById = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' })
     }
-    
-    if(order.buyer_id !== req.user.id && order.canteen_id !== req.user.id) throw new Error("Access Denied.");
 
     res.json(order)
   } catch (err) {
@@ -75,32 +86,4 @@ exports.updateOrderStatus = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
-exports.checkIfOrderExistByStatus = async (req, res) => {
-    try {
-        const orders = await Order.getByStatusAndBuyer(req.params.status, req.user.id);
-        res.json(orders.length > 0);
-    } catch (e) {
-        res.status(500).json({error: e.message});
-    }
-}
-
-exports.duplicateOrder = async (req, res) => {
-    try {
-        const orderId = await Order.duplicateById(req.params.id, req.user.id);
-        res.json(orderId);
-    } catch (e) {
-        res.status(500).json({error: e.message});
-    }
-}
-
-exports.getOrdersByBuyer = async (req, res) => {
-    try {
-        const orders = await Order.getByBuyer(req.user.id);
-        res.json(orders);
-    } catch (e) {
-        res.status(500).json({error: e.message});
-    }
-}
-
 
