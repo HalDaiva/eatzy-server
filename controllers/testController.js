@@ -8,7 +8,7 @@ exports.sendEmail = async (req, res) => {
                 name: 'Eatzy',
                 address: process.env.EMAIL_ADDRESS
             },
-            to: "halilintardaiva@student.ub.ac.id", // MASUKIN NAMA PENERIMA EMAIL DISINI
+            to: "akunta1990@gmail.com", // MASUKIN NAMA PENERIMA EMAIL DISINI
             subject: "Eatzy Email Verification",
             text: "Your verification code: 987654", // MASUKAN ISI PLAIN TEXT DISINI
             html: "Your verification code: <b>987654</b>", // JIKA PERLLU, MASUKAN ISI HTML BODY DISINI

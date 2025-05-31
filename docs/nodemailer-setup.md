@@ -14,6 +14,8 @@
 3. Google will generate a 16-character password for your application
 4. Save this password temporarily (you won't be able to see it again)
 
+gdsu uhbm rdqc czqw
+
 ## Project Configuration
 1. Locate the `.env` file in your project root
     - If it doesn't exist, create one based on `.env.example`
