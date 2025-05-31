@@ -9,6 +9,10 @@ const testRoutes = require('./routes/testRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 
 const salesRoutes = require('./routes/salesRoutes');
+const canteenRoutes = require('./routes/canteenRoutes');
+const menuRoutes = require('./routes/menuRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+
 
 const app = express();
 const cors = require('cors');
@@ -22,11 +26,9 @@ app.use("/orders", orderRoutes);
 app.use("/favorites", favoriteRoutes);
 app.use("/test", testRoutes);
 app.use("/sales", salesRoutes);
+app.use('/canteens',canteenRoutes);
+app.use('/menus',menuRoutes);
 
 app.listen(3002, () => {
     console.log("Server is running on http://localhost:3002");
 });
-
-
-// fsOmTSX7QBWM5yvwbe-R2f:APA91bEK23T8f-yHMpEC8BhHRrYi3_bQQH5zFloQ3nKnayY2Eh7Q0JrBmxfGihW3cPd4PK0eXD6eufjyh7633r3HEGRbUZNV1gwbHzQ5Wd_mGEklADTSHu8
-
