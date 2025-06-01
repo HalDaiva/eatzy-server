@@ -6,7 +6,7 @@ const { sendNotification } = require('../services/notificationService');
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, deviceToken } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password are required.' });
         }
@@ -32,6 +32,11 @@ exports.login = async (req, res) => {
             process.env.TOKEN_KEY,
             { expiresIn: '180d' }
         );
+
+        if (deviceToken) {
+            await User.updateDeviceToken(user.user_id, deviceToken);
+        }
+
         res.status(200).json({ token });
     } catch (e) {
         console.error('Login error:', e);
