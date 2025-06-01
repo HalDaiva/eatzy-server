@@ -268,20 +268,20 @@ const Order = {
                         menu_image: row.menu_image,
                         menu_price: row.menu_price
                     },
-                    addons: []
+                    order_item_addons: []
                 }
                 order.order_items.push(orderItem);
             }
 
             if (row.addon_id) {
-                let addon = orderItem.addons.find(a => a.addon_id === row.addon_id);
+                let addon = orderItem.order_item_addons.find(a => a.addon_id === row.addon_id);
                 if (!addon) {
                     addon = {
                         addon_id: row.addon_id,
                         addon_name: row.addon_name,
                         addon_price: row.addon_price
                     }
-                    orderItem.addons.push(addon);
+                    orderItem.order_item_addons.push(addon);
                 }
             }
         }
@@ -332,20 +332,20 @@ const Order = {
                         menu_image: row.menu_image,
                         menu_price: row.menu_price
                     },
-                    addons: []
+                    order_item_addons: []
                 }
                 order.order_items.push(orderItem);
             }
 
             if (row.addon_id) {
-                let addon = orderItem.addons.find(a => a.addon_id === row.addon_id);
+                let addon = orderItem.order_item_addons.find(a => a.addon_id === row.addon_id);
                 if (!addon) {
                     addon = {
                         addon_id: row.addon_id,
                         addon_name: row.addon_name,
                         addon_price: row.addon_price
                     }
-                    orderItem.addons.push(addon);
+                    orderItem.order_item_addons.push(addon);
                 }
             }
         }
