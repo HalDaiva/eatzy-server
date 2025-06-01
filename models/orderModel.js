@@ -62,11 +62,16 @@ const Order = {
 
 
     async duplicateById(id, buyerId) {
+        const [canteenId] = await db.query(`SELECT canteen_id
+                                         FROM orders
+                                         WHERE order_id = ?`, [id]);
+        
 
         const [result] = await db.query(`DELETE
                                          FROM orders
                                          WHERE buyer_id = ?
-                                           AND order_status = 'in_cart'`, [buyerId]);
+                                           AND order_status = 'in_cart'
+                                           AND canteen_id = ?`, [buyerId, canteenId[0].canteen_id]);
 
         // Duplicate the order
         const [orderResult] = await db.query(`

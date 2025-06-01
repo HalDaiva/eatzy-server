@@ -47,14 +47,30 @@ const Confirmation = {
     },
 
     async updateOrderStatusToWaiting(order_id, scheduleTime) {
+        const totalPreparationTime = await this.getTotalPreparationTimeByOrderId(order_id);
+        console.log(">>>>>>> totalPreparationTime = " + totalPreparationTime);
         // Jika scheduleTime tidak diberikan, set default ke NOW()
         const time = scheduleTime || new Date().toISOString().slice(0, 19).replace('T', ' ');
         await db.query(`
             UPDATE orders
             SET order_status = 'waiting',
-                schedule_time = ?
+                schedule_time = ?,
+                order_time = NOW(),
+                estimation_time = ?
             WHERE order_id = ?
-        `, [time, order_id]);
+        `, [time, totalPreparationTime, order_id]);
+    },
+
+    async getTotalPreparationTimeByOrderId(order_id) {
+
+        const [menus] = await db.query("SELECT m.preparation_time, m.menu_name FROM orders as o LEFT JOIN order_items oi ON oi.order_id = o.order_id LEFT JOIN menus m ON oi.menu_id = m.menu_id WHERE o.order_id = ?", [order_id]);
+
+
+        let totalPreparationTime = 0;
+        menus.forEach((menu) => {
+            totalPreparationTime += menu.preparation_time;
+        })
+        return totalPreparationTime;
     }
 };
 
