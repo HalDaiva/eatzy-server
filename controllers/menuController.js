@@ -423,10 +423,10 @@ exports.toggleAddOnAvailability = async (req, res) => {
 exports.deleteAddonCategory = async (req, res) => {
     try {
         const addon_category_id = req.params.id;
-
         const userId = req.user.id;
 
         const isOwner = await Addon.checkCategoryOwnership(addon_category_id, userId);
+        console.log(isOwner);
         if (!isOwner) {
             return res.status(403).json({ error: 'Akses ditolak: kategori bukan milik Anda' });
         }

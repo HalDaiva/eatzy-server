@@ -51,7 +51,7 @@ router.put('/addon/:id', authorize('canteen'), menuController.updateAddonCategor
 router.put('/availableAddon/:id', authorize('canteen'), menuController.toggleAddOnAvailability);
 
 //Hapus kategori Addon berdasarkan ID v
-router.delete('/deleteCategoriesAddon/:id', authorize('canteen'), menuController.deleteCategory);
+router.delete('/deleteCategoriesAddon/:id', authorize('canteen'), menuController.deleteAddonCategory);
 
 //Hapus Addon berdasarkan ID v
 router.delete('/deleteAddons/:id', authorize('canteen'), menuController.deleteAddon);
