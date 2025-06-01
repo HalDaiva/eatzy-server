@@ -1,4 +1,5 @@
 const Order = require('../models/orderModel');
+const {sendNotification} = require("../services/notificationService");
 
 exports.getOrdersById = async (req, res) => {
     try {
@@ -188,6 +189,7 @@ exports.updateOrderStatus = async (req, res) => {
   const { order_status } = req.body;
 
   const order = await Order.getOrderById(orderId);
+
   if (!order) return res.status(404).json({ message: "Order not found" });
 
   // Contoh validasi transisi status
@@ -197,6 +199,14 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     await Order.updateStatusToFinished(orderId);  // misal update khusus finished
+
+      console.log(order.buyer_id);
+
+      sendNotification(
+        order.buyer_id,
+          "Pesanan Anda telah selesai",
+          "Silahkan ambil pesanan Anda di kantin kami",
+      )
   } else {
     await Order.updateStatus(orderId, order_status);
   }
