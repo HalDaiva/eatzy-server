@@ -209,6 +209,19 @@ exports.updateOrderStatus = async (req, res) => {
       )
   } else {
     await Order.updateStatus(orderId, order_status);
+      if (order_status === "processing") {
+          sendNotification(
+              order.buyer_id,
+              "Pesanan Anda telah diterima oleh kantin",
+              "Harap tunggu pesanan Anda",
+          )
+      } else if (order_status === "cancelled") {
+          sendNotification(
+              order.buyer_id,
+              "Pesanan Anda telah dibatalkan",
+              "Mohon maaf untuk saat ini pesanan Anda tidak dapat dilanjutkan",
+          )
+      }
   }
 
   res.json({ message: "Order status updated successfully" });
