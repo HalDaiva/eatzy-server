@@ -31,6 +31,6 @@ app.use('/menus',menuRoutes);
 app.use('/cart', cartRoutes);
 app.use('/confirmation', confirmationRoutes);
 
-app.listen(3002,'0.0.0.0', () => {
+app.listen(3002, () => {
     console.log("Server is running on http://localhost:3002");
 });
