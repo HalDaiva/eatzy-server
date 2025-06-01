@@ -59,12 +59,12 @@ const OrderModel = {
       orderData.items.push(existingItem);
     }
 
-    if (row.addon_id && row.addon_name) {
+    if (row.addon_id != null && row.addon_name != null) {
       const alreadyExists = existingItem.add_ons.some(addOn => addOn.id === row.addon_id);
       if (!alreadyExists) {
         existingItem.add_ons.push({
-          id: row.addon_id,
-          name: row.addon_name
+          addon_id: row.addon_id,
+          addon_name: row.addon_name
         });
       }
     }
@@ -141,8 +141,8 @@ const OrderModel = {
         const alreadyExists = existingItem.add_ons.some(addOn => addOn.id === row.addon_id);
         if (!alreadyExists) {
           existingItem.add_ons.push({
-            id: row.addon_id,
-            name: row.addon_name
+            addon_id: row.addon_id,
+            addon_name: row.addon_name
           });
         }
       }
@@ -157,7 +157,18 @@ const OrderModel = {
       [order_status, order_id]
     )
     return result;
-  }
+  },
+
+  updateStatusToFinished: async (order_id) => {
+    // update order_status jadi 'finished' dan set order_finished_time ke NOW()
+    const [result] = await db.query(`
+      UPDATE orders
+      SET order_status = 'finished',
+          order_finished_time = NOW()
+      WHERE order_id = ?
+    `, [order_id]);
+    return result;
+  },
 }
 
 module.exports = OrderModel;
