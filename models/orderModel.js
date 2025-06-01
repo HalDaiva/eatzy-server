@@ -435,5 +435,95 @@ const Order = {
         );
         return result;
     },
+
+  getOrderById: async (order_id) => {
+    const [rawRows] = await db.query(`
+    SELECT 
+      o.order_id,
+      o.canteen_id,
+      o.order_status,
+      o.order_time,
+      o.schedule_time,
+      o.total_price,
+      oi.item_details,
+      m.menu_id,
+      m.menu_name,
+      m.menu_image,
+      m.menu_price,
+      a.addon_id,
+      a.addon_name,
+      a.addon_price
+    FROM orders o
+    JOIN order_items oi ON o.order_id = oi.order_id
+    JOIN menus m ON oi.menu_id = m.menu_id
+    LEFT JOIN order_item_addons oia ON oi.order_item_id = oia.order_item_id
+    LEFT JOIN addons a ON oia.addon_id = a.addon_id
+    WHERE o.order_id = ?
+  `, [order_id]);
+
+    if (rawRows.length === 0) return null;
+
+    // Proses nested items dan add-ons
+    const orderData = {
+      order_id: rawRows[0].order_id,
+      canteen_id: rawRows[0].canteen_id,
+      order_status: rawRows[0].order_status,
+      order_time: rawRows[0].order_time,
+      schedule_time: rawRows[0].schedule_time,
+      total_price: rawRows[0].total_price,
+      items: []
+    };
+
+    for (const row of rawRows) {
+      let existingItem = orderData.items.find(item =>
+          item.menu_id === row.menu_id &&
+          item.item_details === row.item_details &&
+          JSON.stringify(item.add_ons.map(a => a.id).sort()) === JSON.stringify([row.addon_id].filter(Boolean).sort())
+      );
+
+      if (!existingItem) {
+        existingItem = {
+          menu_id: row.menu_id,
+          menu_name: row.menu_name,
+          item_details: row.item_details,
+          menu_image: row.menu_image,
+          menu_price: row.menu_price,
+          add_ons: []
+        };
+        orderData.items.push(existingItem);
+      }
+
+      if (row.addon_id != null && row.addon_name != null) {
+        const alreadyExists = existingItem.add_ons.some(addOn => addOn.id === row.addon_id);
+        if (!alreadyExists) {
+          existingItem.add_ons.push({
+            addon_id: row.addon_id,
+            addon_name: row.addon_name
+          });
+        }
+      }
+    }
+
+    return orderData;
+  },
+
+  updateStatus: async (order_id, order_status) => {
+    const [result] = await db.query(
+        'UPDATE orders SET order_status = ? WHERE order_id = ?',
+        [order_status, order_id]
+    )
+    return result;
+  },
+
+  updateStatusToFinished: async (order_id) => {
+    // update order_status jadi 'finished' dan set order_finished_time ke NOW()
+    const [result] = await db.query(`
+      UPDATE orders
+      SET order_status = 'finished',
+          order_finished_time = NOW()
+      WHERE order_id = ?
+    `, [order_id]);
+    return result;
+  },
 };
 module.exports = Order;
