@@ -47,7 +47,6 @@ exports.test = async (req, res) => {
 }
 
 exports.updateOrderStatus = async (req, res) => {
-
   const orderId = req.params.order_id;
   const { order_status } = req.body;
 
@@ -59,7 +58,6 @@ exports.updateOrderStatus = async (req, res) => {
     if (order.order_status !== "processing") {
       return res.status(400).json({ message: "Order must be in processing status to finish" });
     }
-    
     await Order.updateStatusToFinished(orderId);  // misal update khusus finished
   } else {
     await Order.updateStatus(orderId, order_status);
@@ -67,3 +65,4 @@ exports.updateOrderStatus = async (req, res) => {
 
   res.json({ message: "Order status updated successfully" });
 };
+
