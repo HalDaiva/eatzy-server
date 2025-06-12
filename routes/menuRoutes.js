@@ -59,7 +59,7 @@ router.delete('/deleteAddons/:id', authorize('canteen'), menuController.deleteAd
 //update addon item
 router.patch('/updateAddon/:id', authorize('canteen'), menuController.editAddon);
 
-//ambil list kategori menu v
+//ambil list kategori addon v
 router.get('/categoryAddonList', authorize(), menuController.getAddonCategoryList);
 
 
