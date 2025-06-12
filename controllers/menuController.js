@@ -8,7 +8,7 @@ exports.getMenusWithCategories = async (req, res) => {
 
         // Struktur data akhir: kategori → menu → addon kategori → addons
         const categoryMap = {};
-
+        
         for (const row of rows) {
             if (!categoryMap[row.menu_category_id]) {
                 categoryMap[row.menu_category_id] = {
@@ -55,6 +55,7 @@ exports.getMenusWithCategories = async (req, res) => {
                 }
             }
         }
+        console.log(categoryMap);
 
         // Format final: ubah object ke array dan bersihkan nested maps
         const finalResult = Object.values(categoryMap).map(category => ({
