@@ -203,11 +203,11 @@ const Menu = {
     // Ambil menu beserta kategori dan add-on
     async getMenuItem(menu_id) {
         const query = `
-            SELECT * FROM menus 
+            SELECT menu_id FROM menus 
             WHERE menu_id = ?
         `;
         const [rows] = await db.query(query, menu_id);
-        return rows;
+        return rows[0];
     },
 
     //ambil kategori
