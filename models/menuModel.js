@@ -58,8 +58,8 @@ const Menu = {
                 a.addon_is_available
             FROM users u
             JOIN canteens c ON c.canteen_id = u.user_id
-            JOIN menu_categories mc ON mc.canteen_id = c.canteen_id
-            JOIN menus m ON m.menu_category_id = mc.menu_category_id
+            LEFT JOIN menu_categories mc ON mc.canteen_id = c.canteen_id
+            LEFT JOIN menus m ON m.menu_category_id = mc.menu_category_id
             LEFT JOIN menu_addon_categories mac ON mac.menu_id = m.menu_id
             LEFT JOIN addon_categories ac ON ac.addon_category_id = mac.addon_category_id
             LEFT JOIN addons a ON a.addon_category_id = ac.addon_category_id
@@ -226,7 +226,7 @@ const Menu = {
             canteen_id
         } = categoryData;
 
-        const [result] = await connection.query(
+        const [result] = await db.query(
             `INSERT INTO menu_categories 
             (menu_category_name, canteen_id) 
             VALUES (?, ?)`,
@@ -237,7 +237,14 @@ const Menu = {
         );
 
         return result.insertId;
-    }
+    },
+
+    async toggleMenuAvailability(menu_id, isAvailable) {
+    return await db.query(
+      'UPDATE menus SET menu_is_available = ? WHERE menu_id = ?',
+      [isAvailable ? 1 : 0, menu_id]
+    );
+  },
 
 };
 

@@ -3,50 +3,57 @@ const Addon = require('../models/addonModel');
 
 exports.getMenusWithCategories = async (req, res) => {
     try {
-        const userId = req.user.id; // pastikan middleware auth mengisi req.user
+        const userId = req.user.id; // Pastikan middleware auth mengisi req.user
         const rows = await Menu.getMenusWithAddOnsByUserId(userId);
 
-        // Struktur data akhir: kategori → menu → addon kategori → addons
         const categoryMap = {};
-        
+
         for (const row of rows) {
+            if (!row.menu_category_id) continue;
+
+            // Inisialisasi kategori
             if (!categoryMap[row.menu_category_id]) {
                 categoryMap[row.menu_category_id] = {
                     menu_category_id: row.menu_category_id,
                     canteen_id: row.canteen_id,
                     menu_category_name: row.menu_category_name,
-                    menus: {},
+                    menus: [],
                 };
             }
 
-            const menuMap = categoryMap[row.menu_category_id].menus;
+            const category = categoryMap[row.menu_category_id];
 
-            if (!menuMap[row.menu_id]) {
-                menuMap[row.menu_id] = {
+            // Cari atau tambah menu
+            let menu = category.menus.find(m => m.menu_id === row.menu_id);
+            if (!menu && row.menu_id) {
+                menu = {
                     menu_id: row.menu_id,
                     menu_name: row.menu_name,
                     menu_price: row.menu_price,
                     preparation_time: row.preparation_time,
                     menu_image: row.menu_image,
                     menu_is_available: row.menu_is_available === 1,
-                    addon_categories: {},
+                    addon_categories: [],
                 };
+                category.menus.push(menu);
             }
 
-            const addonCategoryMap = menuMap[row.menu_id].addon_categories;
-
-            if (row.addon_category_id) {
-                if (!addonCategoryMap[row.addon_category_id]) {
-                    addonCategoryMap[row.addon_category_id] = {
+            if (menu && row.addon_category_id) {
+                // Cari atau tambah kategori addon
+                let addonCategory = menu.addon_categories.find(ac => ac.addon_category_id === row.addon_category_id);
+                if (!addonCategory) {
+                    addonCategory = {
                         addon_category_id: row.addon_category_id,
                         addon_category_name: row.addon_category_name,
                         is_multiple_choice: row.is_multiple_choice === 1,
                         addons: [],
                     };
+                    menu.addon_categories.push(addonCategory);
                 }
 
                 if (row.addon_id) {
-                    addonCategoryMap[row.addon_category_id].addons.push({
+                    // Tambah addon
+                    addonCategory.addons.push({
                         addon_id: row.addon_id,
                         addon_name: row.addon_name,
                         addon_price: row.addon_price,
@@ -55,23 +62,15 @@ exports.getMenusWithCategories = async (req, res) => {
                 }
             }
         }
-        console.log(categoryMap);
 
-        // Format final: ubah object ke array dan bersihkan nested maps
-        const finalResult = Object.values(categoryMap).map(category => ({
-            ...category,
-            menus: Object.values(category.menus).map(menu => ({
-                ...menu,
-                addon_categories: Object.values(menu.addon_categories),
-            })),
-        }));
-
+        const finalResult = Object.values(categoryMap);
         res.json(finalResult);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
 };
+
 
 //buat menu
 exports.createMenu = async (req, res) => {
@@ -129,7 +128,7 @@ exports.createMenu = async (req, res) => {
 exports.updateCategoryName = async (req, res) => {
     try {
         const menu_category_id = req.params.id;
-        const menu_category_name  = req.body.menu_category_name;
+        const menu_category_name = req.body.menu_category_name;
 
         const userId = req.user.id;
 
@@ -190,7 +189,7 @@ exports.deleteMenu = async (req, res) => {
 exports.toggleMenuAvailability = async (req, res) => {
     try {
         const menuId = req.params.id;
-        const menu_is_available  = req.body;
+        const menu_is_available = req.body.menuAvailable;
 
         const userId = req.user.id;
 
@@ -288,13 +287,10 @@ exports.getMenuCategoryList = async (req, res) => {
 
 //create kategori menu
 exports.createMenuCategory = async (req, res) => {
-    const connection = await require('../config/db').getConnection();
     try {
         const canteen_id = req.user.id;
-        await connection.beginTransaction();
 
-        const menu_category_name = req.body.menu_category_name;
-
+        const { menu_category_name } = req.body;
         // Validasi sederhana
         if (!menu_category_name) {
             return res.status(400).json({ error: 'Field kosong' });
@@ -303,16 +299,12 @@ exports.createMenuCategory = async (req, res) => {
         const menuCategoryId = await Menu.createMenuCategory({
             menu_category_name,
             canteen_id
-        }, connection);
+        });
 
-        await connection.commit();
         res.status(201).json({ message: 'Kategori menu berhasil ditambahkan', menuCategoryId: menuCategoryId });
     } catch (err) {
-        await connection.rollback();
         console.error(err);
         res.status(500).json({ error: 'Gagal menambahkan kategori menu' });
-    } finally {
-        connection.release();
     }
 };
 
@@ -345,7 +337,7 @@ exports.getAddonWithCategories = async (req, res) => {
                         addon_id: row.addon_id,
                         addon_name: row.addon_name,
                         addon_price: row.addon_price,
-                        addon_is_available: row.addon_is_available=== 1,
+                        addon_is_available: row.addon_is_available === 1,
                     });
                 }
             }
@@ -367,9 +359,17 @@ exports.createAddonCategory = async (req, res) => {
         const { addon_category_name, is_multiple_choice = true, addons } = req.body;
 
         const categoryId = await Addon.createAddonCategory(userId, addon_category_name, is_multiple_choice ? 1 : 0);
-        await Addon.insertAddons(addons, categoryId);
+        // Jika addons diberikan dan berbentuk array, masukkan ke DB
+        if (Array.isArray(addons) && addons.length > 0) {
+            await Addon.insertAddons(addons, categoryId);
+        }
 
-        res.status(201).json({ message: "Kategori Add-On berhasil dibuat", addon_category_id: categoryId });
+        // Berhasil
+        res.status(201).json({
+            message: "Kategori Add-On berhasil dibuat",
+            addon_category_id: categoryId,
+            addons_created: Array.isArray(addons) ? addons.length : 0
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -386,6 +386,7 @@ exports.updateAddonCategory = async (req, res) => {
         } = req.body;
 
         await Addon.updateAddonCategory(categoryId, addon_category_name, is_multiple_choice ? 1 : 0);
+
         // Update daftar item add-on
         if (Array.isArray(addons)) {
             await Addon.syncAddons(addons, categoryId);
@@ -402,7 +403,7 @@ exports.updateAddonCategory = async (req, res) => {
 exports.toggleAddOnAvailability = async (req, res) => {
     try {
         const addonId = req.params.id;
-        const addon_is_available = req.body;
+        const addon_is_available = req.body.AddonAvailable;
 
         const userId = req.user.id;
 
@@ -462,32 +463,32 @@ exports.deleteAddon = async (req, res) => {
 };
 
 exports.editAddon = async (req, res) => {
-  try {
-    const addon_id = req.params.id;
-    const {
-      addon_name,
-      addon_price,
-      addon_is_available,
-      addon_category_id
-    } = req.body;
+    try {
+        const addon_id = req.params.id;
+        const {
+            addon_name,
+            addon_price,
+            addon_is_available,
+            addon_category_id
+        } = req.body;
 
-    const updateFields = {
-      addon_name,
-      addon_price,
-      addon_is_available,
-      addon_category_id
-    };
+        const updateFields = {
+            addon_name,
+            addon_price,
+            addon_is_available,
+            addon_category_id
+        };
 
-    const result = await Addon.updateAddonById(addon_id, updateFields);
+        const result = await Addon.updateAddonById(addon_id, updateFields);
 
-    res.status(200).json({
-      message: 'Add-on berhasil diperbarui',
-      result
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+        res.status(200).json({
+            message: 'Add-on berhasil diperbarui',
+            result
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
 };
 
 //ambil addon kategori by id
