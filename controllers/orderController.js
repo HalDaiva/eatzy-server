@@ -166,7 +166,7 @@ exports.getOrderById = async (req, res) => {
   try {
     const orderId = req.params.order_id;
 
-    const order = await Order.getOrderById(orderId);
+    const order = await Order.getById(orderId);
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -183,13 +183,17 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-exports.updateOrderStatus = async (req, res) => {
+exports.test = async (req, res) => {
+  console.log("wowWWW")
+  res.json({"wow" : "wow"});
+}
 
+
+exports.updateOrderStatus = async (req, res) => {
   const orderId = req.params.order_id;
   const { order_status } = req.body;
 
-  const order = await Order.getOrderById(orderId);
-
+  const order = await Order.getById(orderId);
   if (!order) return res.status(404).json({ message: "Order not found" });
 
   // Contoh validasi transisi status
@@ -197,32 +201,11 @@ exports.updateOrderStatus = async (req, res) => {
     if (order.order_status !== "processing") {
       return res.status(400).json({ message: "Order must be in processing status to finish" });
     }
-
     await Order.updateStatusToFinished(orderId);  // misal update khusus finished
-
-      console.log(order.buyer_id);
-
-      sendNotification(
-        order.buyer_id,
-          "Pesanan Anda telah selesai",
-          "Silahkan ambil pesanan Anda di kantin kami",
-      )
   } else {
     await Order.updateStatus(orderId, order_status);
-      if (order_status === "processing") {
-          sendNotification(
-              order.buyer_id,
-              "Pesanan Anda telah diterima oleh kantin",
-              "Harap tunggu pesanan Anda",
-          )
-      } else if (order_status === "cancelled") {
-          sendNotification(
-              order.buyer_id,
-              "Pesanan Anda telah dibatalkan",
-              "Mohon maaf untuk saat ini pesanan Anda tidak dapat dilanjutkan",
-          )
-      }
   }
 
   res.json({ message: "Order status updated successfully" });
 };
+
