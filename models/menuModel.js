@@ -187,8 +187,8 @@ const Menu = {
                 a.addon_is_available
             FROM users u
             JOIN canteens c ON c.canteen_id = u.user_id
-            JOIN menu_categories mc ON mc.canteen_id = c.canteen_id
-            JOIN menus m ON m.menu_category_id = mc.menu_category_id
+            LEFT JOIN menu_categories mc ON mc.canteen_id = c.canteen_id
+            LEFT JOIN menus m ON m.menu_category_id = mc.menu_category_id
             LEFT JOIN menu_addon_categories mac ON mac.menu_id = m.menu_id
             LEFT JOIN addon_categories ac ON ac.addon_category_id = mac.addon_category_id
             LEFT JOIN addons a ON a.addon_category_id = ac.addon_category_id
@@ -270,56 +270,73 @@ const Menu = {
     },
 
 
-    async toggleMenuAvailability(menu_id, isAvailable) {
-        return await db.query(
-            'UPDATE menus SET menu_is_available = ? WHERE menu_id = ?',
-            [isAvailable ? 1 : 0, menu_id]
-        );
-    },
-
     async updateMenu(menu_id, data) {
-        const { menu_name, preparation_time, menu_image, menu_price, menu_is_available, menu_category_id } = data;
-        const query = `
-      UPDATE menus SET 
-        menu_name = ?, 
-        preparation_time = ?, 
-        menu_image = ?, 
-        menu_price = ?, 
-        menu_is_available = ?, 
-        menu_category_id = ?, 
-        updated_at = NOW()
-      WHERE menu_id = ?
-    `;
-        await db.query(query, [
-            menu_name,
-            preparation_time,
-            menu_image,
-            menu_price,
-            menu_is_available,
-            menu_category_id,
-            menu_id
-        ]);
+        // Bangun bagian SET dari query berdasarkan data yang dikirim
+        const fields = [];
+        const values = [];
+
+        if (data.menu_name !== undefined) {
+            fields.push('menu_name = ?');
+            values.push(data.menu_name);
+        }
+
+        if (data.preparation_time !== undefined) {
+            fields.push('preparation_time = ?');
+            values.push(data.preparation_time);
+        }
+
+        if (data.menu_image !== undefined) {
+            fields.push('menu_image = ?');
+            values.push(data.menu_image);
+        }
+
+        if (data.menu_price !== undefined) {
+            fields.push('menu_price = ?');
+            values.push(data.menu_price);
+        }
+
+        if (data.menu_is_available !== undefined) {
+            fields.push('menu_is_available = ?');
+            values.push(data.menu_is_available);
+        }
+
+        if (data.menu_category_id !== undefined) {
+            fields.push('menu_category_id = ?');
+            values.push(data.menu_category_id);
+        }
+
+        // Selalu update updated_at
+        fields.push('updated_at = NOW()');
+
+        // Jika tidak ada field yang ingin diupdate, abaikan query
+        if (fields.length === 1) return;
+
+        const query = `UPDATE menus SET ${fields.join(', ')} WHERE menu_id = ?`;
+        values.push(menu_id);
+
+        await db.query(query, values);
     },
 
     async updateMenuAddonCategories(menu_id, addon_category_ids) {
-        // Clear old ones
+        if (!Array.isArray(addon_category_ids)) return; // Tidak ada update jika tidak dikirim
+
         await db.query('DELETE FROM menu_addon_categories WHERE menu_id = ?', [menu_id]);
 
-        // Insert new ones
         if (addon_category_ids.length > 0) {
             const values = addon_category_ids.map(id => [menu_id, id]);
             await db.query('INSERT INTO menu_addon_categories (menu_id, addon_category_id) VALUES ?', [values]);
         }
     },
 
+
     // Ambil menu beserta kategori dan add-on
     async getMenuItem(menu_id) {
         const query = `
-            SELECT * FROM menus 
+            SELECT menu_id FROM menus 
             WHERE menu_id = ?
         `;
         const [rows] = await db.query(query, menu_id);
-        return rows;
+        return rows[0];
     },
 
     //ambil kategori
@@ -338,7 +355,7 @@ const Menu = {
             canteen_id
         } = categoryData;
 
-        const [result] = await connection.query(
+        const [result] = await db.query(
             `INSERT INTO menu_categories 
             (menu_category_name, canteen_id) 
             VALUES (?, ?)`,
@@ -349,7 +366,15 @@ const Menu = {
         );
 
         return result.insertId;
-    }
+    },
+
+    async toggleMenuAvailability(menu_id, isAvailable) {
+    return await db.query(
+      'UPDATE menus SET menu_is_available = ? WHERE menu_id = ?',
+      [isAvailable ? 1 : 0, menu_id]
+    );
+  },
+
 };
 
 module.exports = Menu;

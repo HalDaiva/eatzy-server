@@ -51,6 +51,26 @@ const Addon = {
     return result.insertId;
   },
 
+  // Menambahkan banyak add-on ke dalam satu kategori
+  async insertAddons(addons, categoryId) {
+    if (!Array.isArray(addons) || addons.length === 0) return;
+
+    const query = `
+    INSERT INTO addons (addon_name, addon_price, addon_is_available, addon_category_id)
+    VALUES ?
+  `;
+
+    const values = addons.map(addon => [
+      addon.addon_name,
+      addon.addon_price,
+      addon.addon_is_available ? 1 : 0,
+      categoryId
+    ]);
+
+    await db.query(query, [values]);
+  },
+
+
   async updateAddonCategory(addon_category_id, name, is_multiple_choice) {
     const query = `
       UPDATE addon_categories
@@ -61,35 +81,33 @@ const Addon = {
   },
 
   async syncAddons(addons, categoryId) {
-    const existing = await db.query(
+    const [existingRows] = await db.query(
       `SELECT addon_id FROM addons WHERE addon_category_id = ?`,
       [categoryId]
     );
-    const existingIds = new Set(existing[0].map(row => row.addon_id));
-
+    const existingIds = new Set(existingRows.map(row => row.addon_id));
     const sentIds = new Set();
 
     for (const addon of addons) {
-      if (addon.addon_id) {
-        // Update existing
+      if (addon.addon_id && existingIds.has(addon.addon_id)) {
+        // Update Add-On yang sudah ada
         await db.query(
-          `UPDATE addons SET addon_name = ?, addon_price = ?, updated_at = NOW()
-           WHERE addon_id = ? AND addon_category_id = ?`,
+          `UPDATE addons SET addon_name = ?, addon_price = ?, updated_at = NOW() WHERE addon_id = ? AND addon_category_id = ?`,
           [addon.addon_name, addon.addon_price, addon.addon_id, categoryId]
         );
         sentIds.add(addon.addon_id);
       } else {
-        // Insert new
-        const result = await db.query(
+        // Tambah Add-On baru
+        const [result] = await db.query(
           `INSERT INTO addons (addon_name, addon_price, addon_category_id, addon_is_available)
-         VALUES (?, ?, ?, true)`,
+                 VALUES (?, ?, ?, true)`,
           [addon.addon_name, addon.addon_price, categoryId]
         );
-        sentIds.add(result[0].insertId); // Tambahkan ID baru juga agar tidak terhapus di bawah
+        sentIds.add(result.insertId);
       }
     }
 
-    // Hapus addon yang tidak ada di input
+    // Hapus Add-On yang tidak termasuk dalam input terbaru
     for (const id of existingIds) {
       if (!sentIds.has(id)) {
         await db.query(
@@ -99,6 +117,7 @@ const Addon = {
       }
     }
   },
+
 
   async toggleAddonAvailability(addon_id, isAvailable) {
     return await db.query(
@@ -147,14 +166,14 @@ const Addon = {
     return result;
   },
   //ambil kategori
-    async getAddonCategoryList(canteen_id) {
-        const query = `
+  async getAddonCategoryList(canteen_id) {
+    const query = `
             SELECT * FROM addon_categories 
             WHERE canteen_id = ?
         `;
-        const [rows] = await db.query(query, canteen_id);
-        return rows;
-    }
+    const [rows] = await db.query(query, canteen_id);
+    return rows;
+  }
 
 };
 
