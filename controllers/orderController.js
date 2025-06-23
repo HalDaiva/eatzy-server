@@ -1,40 +1,44 @@
-const Order = require('../models/orderModel');
-const {sendNotification} = require("../services/notificationService");
+const Order = require("../models/orderModel");
+const { sendNotification } = require("../services/notificationService");
 
 exports.getOrdersById = async (req, res) => {
     try {
         const order = await Order.getById(req.params.id);
-        if (order.buyer_id !== req.user.id && order.canteen_id !== req.user.id) throw new Error("Access Denied.");
+        if (order.buyer_id !== req.user.id && order.canteen_id !== req.user.id)
+            throw new Error("Access Denied.");
         res.json(order);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({ error: e.message });
     }
 };
 
 exports.checkIfOrderExistByStatus = async (req, res) => {
     try {
-        const orders = await Order.getByStatusAndBuyer(req.params.status, req.user.id);
+        const orders = await Order.getByStatusAndBuyer(
+            req.params.status,
+            req.user.id
+        );
         res.json(orders.length > 0);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({ error: e.message });
     }
-}
+};
 
 exports.duplicateOrder = async (req, res) => {
     try {
         const orderId = await Order.duplicateById(req.params.id, req.user.id);
         res.json(orderId);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({ error: e.message });
     }
-}
+};
 
 exports.getOrdersByBuyer = async (req, res) => {
     try {
         const orders = await Order.getByBuyer(req.user.id);
         res.json(orders);
     } catch (e) {
-        res.status(500).json({error: e.message});
+        res.status(500).json({ error: e.message });
     }
 };
 
@@ -143,69 +147,89 @@ exports.calculateTotalPrice = async (req, res) => {
 };
 
 exports.getOrders = async (req, res) => {
-  try {
-    const user = req.user;
+    try {
+        const user = req.user;
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const canteenId = user.id;
+        const status = req.query.status || "Semua";
+
+        // Memanggil getAllByCanteen untuk dapatkan list orders dengan filter status
+        const orders = await Order.getAllByCanteen(status, canteenId);
+
+        res.json(orders);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    const canteenId = user.id;
-    const status = req.query.status || 'Semua';
-
-    // Memanggil getAllByCanteen untuk dapatkan list orders dengan filter status
-    const orders = await Order.getAllByCanteen(status, canteenId);
-
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 };
 
 exports.getOrderById = async (req, res) => {
-  try {
-    const orderId = req.params.order_id;
+    try {
+        const orderId = req.params.order_id;
 
-    const order = await Order.getById(orderId);
+        const order = await Order.getById(orderId);
 
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        // Validasi agar hanya kantin yang punya order yg bisa akses
+        if (order.canteen_id !== req.user.id) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    // Validasi agar hanya kantin yang punya order yg bisa akses
-    if (order.canteen_id !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    res.json(order);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 };
 
 exports.test = async (req, res) => {
-  console.log("wowWWW")
-  res.json({"wow" : "wow"});
-}
-
-
-exports.updateOrderStatus = async (req, res) => {
-  const orderId = req.params.order_id;
-  const { order_status } = req.body;
-
-  const order = await Order.getById(orderId);
-  if (!order) return res.status(404).json({ message: "Order not found" });
-
-  // Contoh validasi transisi status
-  if (order_status === "finished") {
-    if (order.order_status !== "processing") {
-      return res.status(400).json({ message: "Order must be in processing status to finish" });
-    }
-    await Order.updateStatusToFinished(orderId);  // misal update khusus finished
-  } else {
-    await Order.updateStatus(orderId, order_status);
-  }
-
-  res.json({ message: "Order status updated successfully" });
+    console.log("wowWWW");
+    res.json({ wow: "wow" });
 };
 
+exports.updateOrderStatus = async (req, res) => {
+    const orderId = req.params.order_id;
+    const { order_status } = req.body;
+
+    const order = await Order.getById(orderId);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    // Contoh validasi transisi status
+    if (order_status === "finished") {
+        if (order.order_status !== "processing") {
+            return res
+                .status(400)
+                .json({
+                    message: "Order must be in processing status to finish",
+                });
+        }
+        await Order.updateStatusToFinished(orderId); // misal update khusus finished
+        sendNotification(
+            order.buyer_id,
+            "Pesanan Anda telah selesai",
+            "Silahkan ambil pesanan Anda di kantin kami"
+        );
+    } else {
+        await Order.updateStatus(orderId, order_status);
+        if (order_status === "processing") {
+            sendNotification(
+                order.buyer_id,
+                "Pesanan Anda telah diterima oleh kantin",
+                "Harap tunggu pesanan Anda"
+            );
+        } else if (order_status === "canceled") {
+            sendNotification(
+                order.buyer_id,
+                "Pesanan Anda telah dibatalkan",
+                "Mohon maaf untuk saat ini pesanan Anda tidak dapat dilanjutkan"
+            );
+        }
+    }
+
+    res.json({ message: "Order status updated successfully" });
+};
